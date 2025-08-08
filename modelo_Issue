@@ -1,0 +1,50 @@
+### 🎯 Título da Tarefa
+[Escreva aqui o nome claro e direto da tarefa, ex: Implementar login de usuário no backend]
+
+---
+
+### 📝 Descrição
+Descreva o objetivo desta tarefa e por que ela é necessária.  
+Exemplo: Esta tarefa visa implementar o endpoint de login para autenticação de usuários com JWT.
+
+---
+
+### ✅ Critérios de Aceitação
+- [ ] O endpoint deve aceitar e-mail e senha
+- [ ] Deve retornar token JWT válido
+- [ ] Em caso de erro, retornar mensagem amigável
+- [ ] Cobertura de testes mínima (opcional)
+
+---
+
+### 📁 Arquivos ou Módulos Relacionados
+- backend/routes/auth.js
+- backend/models/User.js
+
+---
+
+### 🔗 Relacionado a
+- Epic: #ID_DA_EPIC (se houver)
+- Tarefa anterior: #ID_DA_TAREFA_ANTERIOR (se houver)
+
+---
+
+### 🚧 Checklist de Subtarefas
+- [ ] Criar rota POST /auth/login
+- [ ] Validar campos recebidos
+- [ ] Consultar usuário no banco
+- [ ] Gerar e retornar token JWT
+- [ ] Escrever testes unitários (se aplicável)
+- [ ] Atualizar documentação da API (se aplicável)
+
+---
+
+### 💬 Comentários
+Adicione aqui qualquer observação extra, links úteis ou sugestões de implementação.
+
+---
+
+### 🔗 Vincular este número no commit:
+Ao finalizar, no commit use:  
+`git commit -m "feat: implementa login de usuário. Closes #XX"`
+
