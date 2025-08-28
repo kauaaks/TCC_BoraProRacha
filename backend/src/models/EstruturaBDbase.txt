@@ -1,0 +1,49 @@
+MODELAGEM DO BANCO DE DADOS:
+1 Entidades Principais
+O sistema será estruturado em torno das seguintes entidades principais:
+
+Users (Usuários)
+
+Entidade base para todos os tipos de usuário
+Campos: id, email, password_hash, name, phone, user_type, created_at, updated_at, is_active
+Teams (Times)
+
+Representa os times de futebol
+Campos: id, name, description, logo_url, created_by, field_id, monthly_fee, created_at, updated_at, is_active
+Fields (Campos)
+
+Representa os campos society
+Campos: id, name, address, hourly_rate, manager_id, facilities, created_at, updated_at, is_active
+Team_Members (Membros do Time)
+
+Relacionamento entre usuários e times
+Campos: id, user_id, team_id, role, joined_at, monthly_payment_status, is_active
+Games (Jogos)
+
+Representa as partidas agendadas
+Campos: id, team_id, field_id, scheduled_date, duration, status, created_at, updated_at
+Payments (Pagamentos)
+
+Controle financeiro de mensalidades
+Campos: id, user_id, team_id, amount, due_date, paid_date, status, payment_method
+Game_Stats (Estatísticas dos Jogos)
+
+Estatísticas individuais dos jogadores
+Campos: id, game_id, user_id, goals, assists, yellow_cards, red_cards, attendance
+2 Relacionamentos
+-- Relacionamentos principais
+Users 1:N Team_Members
+Teams 1:N Team_Members
+Teams 1:N Games
+Fields 1:N Games
+Users 1:N Payments
+Teams 1:N Payments
+Games 1:N Game_Stats
+Users 1:N Game_Stats
+3 Índices e Performance
+Para garantir performance adequada, serão criados índices estratégicos:
+
+Índice composto em (team_id, user_id) para Team_Members
+Índice em scheduled_date para Games
+Índice composto em (user_id, due_date) para Payments
+Índice em email para Users (único)
