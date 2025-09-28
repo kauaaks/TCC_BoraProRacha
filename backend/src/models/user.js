@@ -7,9 +7,8 @@ const userSchema = new mongoose.Schema({
     senha: {type: String, required:true},
     telefone: {type: Number, required:true},
     ativo: {type: Boolean, default:true},
+    user_type: {type: String, enum:["admin","jogador", "gestor de campo", "representante"]},
 },{timestamps: true});
-
-const User = mongoose.model("Usuários", userSChema);
 
 userSchema.pre("save", async function (next) {
     if (!this.isModified("senha")) return next();
@@ -19,4 +18,4 @@ userSchema.pre("save", async function (next) {
     next();
 });
 
-module.exports = User;
+module.exports = mongoose.model("Usuários", userSchema);
