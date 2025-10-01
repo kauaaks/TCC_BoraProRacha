@@ -11,7 +11,7 @@ async function listarTimes(req, res) {
 
 async function buscarTime(req, res) {
     try {
-        const team = await Teams.fingById(req.params.id);
+        const team = await Teams.findById(req.params.id);
         res.json(team);
     } catch (err) {
         res.status(500).json({error:err.message});
