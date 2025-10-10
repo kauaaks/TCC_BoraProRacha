@@ -1,8 +1,8 @@
-const Games = require('../models/games');
+const gameService = require('../services/gameService');
 
 async function listarJogos(req, res) {
     try {
-        const jogos = await Games.find();
+        const jogos = await gameService.listarJogos();
         res.json(jogos);
     } catch (err) {
         res.status(500).json({ error: err.message});
@@ -11,21 +11,16 @@ async function listarJogos(req, res) {
 
 async function buscarJogo(req, res) {
     try {
-        const jogo = await Games.findById(req.params.id);
-
-        if (!jogo) return res.status(404).json({ error: "jogo não encontrado."});
-
-        res.json(jogo);
+        const jogo = await gameService.buscarJogo(req.params.id);
+        res.status(200).json(jogo);
     } catch (err) {
-        res.status(500).json({ error: err.message});
+        res.status(404).json({ error: err.message});
     }
 }
 
 async function criarJogo(req, res) {
     try {
-        const { teams_id, field_id, scheduled_date, status, duration} = req.body;
-        const novoJogo = new Games({ teams_id, field_id, scheduled_date, status, duration});
-        await novoJogo.save();
+        const novoJogo = await gameService.criarJogo(req.body);
         res.status(201).json(novoJogo);
     } catch (err) {
         res.status(400).json({ error: err.message});
@@ -34,15 +29,12 @@ async function criarJogo(req, res) {
 
 async function atualizarJogo(req, res) {
     try {
-        const jogoAtualizado = await Games.findByIdAndUpdate(
+        const jogoAtualizado = await gameService.atualizarJogo(
             req.params.id,
             req.body,
             { new: true, runValidators: true}
         );
-
-        if (!jogoAtualizado) return res.status(404).json({ error: "jogo não encontrado."});
-
-        res.json(jogoAtualizado);
+        res.status(200).json(jogoAtualizado);
     } catch (err) {
         res.status(400).json({ error: err.message});
     }
@@ -50,13 +42,10 @@ async function atualizarJogo(req, res) {
 
 async function deletarJogo(req, res) {
     try {
-     const jogoDeletado = await Games.findByIdAndDelete(req.params.id);
-
-     if (!jogoDeletado) return res.status(404).json({error: "jogo não encontrado."});
-
-     res.json({message: "jogo deletado com sucesso."});
+     const jogoDeletado = await gameService.deletarJogo(req.params.id);
+     res.status(200).json(jogoDeletado);
     } catch (err) {
-        res.status(500).json({ error: err.message});
+        res.status(404).json({ error: err.message});
     }
 }
 

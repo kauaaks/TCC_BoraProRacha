@@ -1,8 +1,8 @@
-const Fields = require('../models/fields');
+const fieldService = require('../services/fieldService');
 
 async function listarCampos(req, res) {
     try {
-        const fields = await Fields.find();
+        const fields = await fieldService.listarCampos();
         res.json(fields);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -11,19 +11,16 @@ async function listarCampos(req, res) {
 
 async function buscarCampo(req, res) {
     try {
-        const field = await Fields.findById(req.params.id);
-        if (!field) return res.status(404).json({ error: 'Campo não encontrado' });
-        res.json(field);
+        const field = await fieldService.buscarCampo(req.params.id);
+         res.status(200).json(field);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(404).json({ error: err.message });
     }
 }
 
 async function criarCampo(req, res) {
     try {
-        const { nome, address, hourly_rate, facilities } = req.body;
-        const novoField = new Fields({ nome, address, hourly_rate, facilities });
-        await novoField.save();
+        const novoCampo = await fieldService.criarCampo(req.body);
         res.status(201).json(novoField);
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -32,13 +29,12 @@ async function criarCampo(req, res) {
 
 async function atualizarCampo(req, res) {
     try {
-        const field = await Fields.findByIdAndUpdate(
+        const field = await fieldService.atualizarCampo(
             req.params.id,
             req.body,
             { new: true, runValidators: true }
         );
-        if (!field) return res.status(404).json({ error: 'Campo não encontrado' });
-        res.json(field);
+        res.status(200).json(field);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -46,11 +42,10 @@ async function atualizarCampo(req, res) {
 
 async function deletarCampo(req, res) {
     try {
-        const field = await Fields.findByIdAndDelete(req.params.id);
-        if (!field) return res.status(404).json({ error: 'Campo não encontrado' });
-        res.json({ message: 'Campo deletado com sucesso' });
+        const field = await fieldService.deletarCampo(req.params.id);
+        res.status(200).json(field);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(404).json({ error: err.message });
     }   
 }
 

@@ -1,8 +1,8 @@
-const Payments = require("../models/payments");
+const paymentService = require('../services/paymentService');
 
 async function listarPagamentos(req, res) {
   try {
-    const payments = await Payments.find();
+    const payments = await paymentService.listarPagamentos();
     res.json(payments);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -11,19 +11,16 @@ async function listarPagamentos(req, res) {
 
 async function buscarPagamento(req, res) {
   try {
-    const payment = await Payments.findById(req.params.id);
-    if (!payment) return res.status(404).json({ error: "Pagamento não encontrado" });
-    res.json(payment);
+    const payment = await paymentService.buscarPagamento(req.params.id);
+    res.status(200).json(payment);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(404).json({ error: err.message });
   }
 }
 
 async function criarPagamento(req, res) {
     try {
-        const { user_id, team_id, amount, due_date, payment_date, status, method } = req.body;
-        const novoPayment = new Payments({ user_id, team_id, amount, due_date, payment_date, status, method });
-        await novoPayment.save();
+        const novoPayment = await paymentService.criarPagamento(req.body);
         res.status(201).json(novoPayment);
     }   catch (err) {
         res.status(400).json({ error: err.message });
@@ -32,15 +29,12 @@ async function criarPagamento(req, res) {
 
 async function atualizarPagamento(req, res) {
     try {
-        const payment = await Payments.findByIdAndUpdate(
+        const payment = await paymentService.atualizarPagamento(
         req.params.id,
         req.body,
         { new: true, runValidators: true }
         );
-
-        if (!payment) return res.status(404).json({ error: "Pagamento não encontrado" });
-        
-        res.json(payment);
+        res.status(200).json(payment);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -48,9 +42,8 @@ async function atualizarPagamento(req, res) {
 
 async function deletarPagamento(req, res) {
     try {
-        const payment = await Payments.findByIdAndDelete(req.params.id);
-        if (!payment) return res.status(404).json({ error: "Pagamento não encontrado" });
-        res.json({ message: "Pagamento deletado com sucesso" });
+        const payment = await paymentService.deletarPagamento(req.params.id);
+        res.status(200).json(payment);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

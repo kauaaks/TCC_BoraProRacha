@@ -1,8 +1,8 @@
-const Game_stats = require('../models/game_stats');
+const gameStatService = require('../services/gameStatService');
 
 async function listarStatusDeJogos(req, res) {
     try {
-        const gameStats = await Game_stats.find();
+        const gameStats = await gameStatService.listarStatusDeJogos();
         res.json(gameStats);
     } catch (err){
         res.status(500).json({error: err.message});
@@ -11,19 +11,16 @@ async function listarStatusDeJogos(req, res) {
 
 async function buscarStatusDeJogo(req, res) {
     try {
-        const gameStat = await Game_stats.findById(req.params.id);
-        if (!gameStat) return res.status(404).json({error: "Não encontrado(status de jogo)"});
-        res.json(gameStat);
+        const gameStat = await gameStatService.buscarStatusDeJogo(req.params.id);
+        res.status(200).json(gameStat);
     } catch (err) {
-        res.status(400).json({error: err.message});
+        res.status(404).json({error: err.message});
     }
 }
 
 async function criarStatusDeJogo(req, res) {
     try {
-        const {game_id, user_id, goals, assists, fouls, minutes_played, yellow_cards, red_cards, attendance} = req.body;
-        newGameStat = new Game_stats({game_id, user_id, goals, assists, fouls, minutes_played, yellow_cards, red_cards, attendance});
-        await newGameStat.save();
+        const newGameStat = await gameStatService.criarStatusDeJogo(req.body);
         res.status(201).json(newGameStat);
     } catch (err) {
         res.status(400).json({error: err.message});
@@ -32,9 +29,8 @@ async function criarStatusDeJogo(req, res) {
 
 async function atualizarStatusDeJogo(req, res) {
     try {
-        const gameStat = await Game_stats.findByIdAndUpdate( req.params.id, req.body, {new: true, runValidators: true});
-        if (!gameStat) return res.status(404).json({error: "Não encontrado(status de jogo)"});
-        res.json(gameStat);
+        const gameStat = await gameStatService.atualizarStatusDeJogo( req.params.id, req.body, {new: true, runValidators: true});
+         res.status(200).json(gameStat);
     } catch (err) {
         res.status(400).json({error: err.message});
     }
@@ -42,11 +38,10 @@ async function atualizarStatusDeJogo(req, res) {
 
 async function deletarGameStat(req, res) {
     try {
-        const gameStat = await Game_stats.findByIdAndDelete(req.params.id);
-        if (!gameStat) return res.status(404).json({error: "Não encontrado(status de jogo)"});
-        res.json({message: "Status de jogo deletado com sucesso"}); 
+        const gameStat = await gameStatService.deletarGameStat(req.params.id);
+        res.status(200).json(gameStat); 
     } catch (err) {
-        res.status(500).json({error: err.message});
+        res.status(404).json({error: err.message});
     }
 }
 

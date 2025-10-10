@@ -1,8 +1,8 @@
-const Teams = require("../models/teams");
+const teamsService = require('../services/teamService');
 
 async function listarTimes(req, res) {
     try {
-        const teams = await Teams.find();
+        const teams = await teamsService.listarTimes();
         res.json(teams);
     } catch (err) {
         res.status(500).json({error: err.message});
@@ -11,44 +11,37 @@ async function listarTimes(req, res) {
 
 async function buscarTime(req, res) {
     try {
-        const team = await Teams.findById(req.params.id);
-        res.json(team);
+        const team = await teamsService.buscarTime(req.params.id);
+        res.status(200).json(team);
     } catch (err) {
-        res.status(500).json({error:err.message});
+        res.status(404).json({error:err.message});
     }
 }
 
 async function criarTime(req, res) {
     try {
-      const { nome, description, logo_url, created_by, field_id, monthly_fee} = req.body;
-      const novoTime = new Teams({ nome, description, logo_url, created_by, field_id, monthly_fee });
-        await novoTime.save();  
+      const novoTime = await teamsService.criarTime(req.body);
+      res.status(201).json(novoTime);
     } catch (err) {
-        res.status(500).json({error: err.message});
+        res.status(400).json({error: err.message});
     }
 }
 
 async function atualizarTime(req, res) {
     try {
-        const time = await Teams.findByIdAndUpdate(req.params.id, req.body, {new: true, runValidators: true});
-
-        if (!time) return res.status(404).json({error: "Time não encontrado"});
-
-        res.json(time);
+        const time = await teamsService.atualizarTime(req.params.id, req.body, {new: true, runValidators: true});
+        res.status(200).json(time);
     } catch (err) {
-        res.status(500).json({error: err.message});
+        res.status(400).json({error: err.message});
     }
 }
 
 async function deletarTime(req, res) {
     try {
-        const time = await Teams.findByIdAndDelete(req.params.id);
-
-        if (!time) return res.status(404).json({error: "Time não encontrado"});
-
-        res.json({message: "Time deletado com sucesso"});
+        const time = await teamsService.deletarTime(req.params.id);
+        res.status(200).json(time);
     } catch (err) {
-        res.status(500).json({error: err.message});
+        res.status(404).json({error: err.message});
     }
 }
 
