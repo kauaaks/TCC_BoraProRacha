@@ -7,4 +7,4 @@ const fieldsSchema = new mongoose.Schema({
     facilities: {type: String, required:true},
 }, {timestamps: true});
 
-module.exports = mongoose.model("Campos", fieldsSchema);
+module.exports = mongoose.models.Campos || mongoose.model("Campos", fieldsSchema);

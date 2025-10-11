@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const user = require("./user");
 
 const team_membersSchema = new mongoose.Schema({
     user_id: {type: mongoose.Schema.Types.ObjectId, ref: "Usuários", required: true},
@@ -9,4 +8,4 @@ const team_membersSchema = new mongoose.Schema({
     monthly_payment_status: {type: String, enum: ["paid", "unpaid"], default: "unpaid"},
 }, {timestamps: true});
 
-module.exports = mongoose.model("MembrosTimes", team_membersSchema);
+module.exports = mongoose.models.MembrosDeTime || mongoose.model("MembrosDeTime", team_membersSchema);

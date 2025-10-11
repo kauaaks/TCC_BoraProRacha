@@ -18,4 +18,5 @@ userSchema.pre("save", async function (next) {
     next();
 });
 
-module.exports = mongoose.model("Usuários", userSchema);
+/* "mongoose.models.Usuários" verifica se o modelo já foi registrado.*/
+module.exports = mongoose.models.Usuários || mongoose.model("Usuários", userSchema);

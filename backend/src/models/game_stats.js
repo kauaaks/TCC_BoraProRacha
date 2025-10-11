@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const user = require("./user");
 
 const game_statsSchema = new mongoose.Schema({
     game_id: {type: mongoose.Schema.Types.ObjectId, ref: "Jogos", required: true},
@@ -13,4 +12,4 @@ const game_statsSchema = new mongoose.Schema({
     attendance: {type: Boolean, default: false},
 });
 
-module.exports = mongoose.model("EstatísticasJogos", game_statsSchema);
+module.exports = mongoose.models.EstatisticasDeJogos || mongoose.model("EstatisticasDeJogos", game_statsSchema);

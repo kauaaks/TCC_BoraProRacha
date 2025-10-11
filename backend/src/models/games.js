@@ -8,4 +8,4 @@ const gamesSchema = new mongoose.Schema({
     duration: {type: String, required: true}, // duração precisa ter formato "HH:MM:SS"
 }, {timestamps: true});
 
-module.exports = mongoose.model("Jogos", gamesSchema);
+module.exports = mongoose.models.Jogos || mongoose.model("Jogos", gamesSchema);

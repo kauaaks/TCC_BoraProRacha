@@ -10,4 +10,4 @@ const paymentsSchema = new mongoose.Schema({
     payment_method: {type: String, enum: ["credit_card", "debit_card", "pix", "boleto"], required: true},
 }, {timestamps: true});
 
-module.exports = mongoose.model("Pagamentos", paymentsSchema);
+module.exports = mongoose.models.Pagamentos || mongoose.model("Pagamentos", paymentsSchema);

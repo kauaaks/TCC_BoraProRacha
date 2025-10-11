@@ -1,6 +1,6 @@
-const moongose = require ("mongoose");
+const mongoose = require ("mongoose");
 
-const teamsSchema = new mongoose.schema({
+const teamsSchema = new mongoose.Schema({
     nome: {type: String, required: true},
     description: {type: String, required:true},
     logo_url: {type: String, required:true},
@@ -8,4 +8,4 @@ const teamsSchema = new mongoose.schema({
     monthly_fee: {type: Number, required:true},
 }, {timestamps: true});
 
-module.exports = moongose.model("Times", teamsSchema);
+module.exports = mongoose.models.Times || mongoose.model("Times", teamsSchema);

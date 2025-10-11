@@ -26,11 +26,14 @@ app.get('/', (req, res) => {
 
 // 8️⃣ Conexão com MongoDB Atlas
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB conectado com sucesso!'))
+  .then(() => {
+    console.log('✅ MongoDB conectado com sucesso!');
+  // 9️⃣ Define porta e inicia o servidor
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+    });
+  })
   .catch(err => console.error('❌ Erro ao conectar no MongoDB:', err));
 
-// 9️⃣ Define porta e inicia o servidor
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-});
+
