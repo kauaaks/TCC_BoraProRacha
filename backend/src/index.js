@@ -8,6 +8,25 @@ const mongoose = require('mongoose');
 // 3️⃣ Cria app Express
 const app = express();
 
+app.get('/health', async (req, res) => {
+  let dbStatus;
+
+  // Verifica estado da conexão do Mongoose
+  if (mongoose.connection.readyState === 1) {
+    dbStatus = "Conectado";
+  } else {
+    try {
+      // Tenta "pingar" o banco
+      await mongoose.connection.db.admin().ping();
+      dbStatus = "Conectado";
+    } catch (err) {
+      dbStatus = "Erro ao conectar";
+    }
+  }
+
+  res.json({ statusDB: dbStatus });
+});
+
 // 4️⃣ Middleware para ler JSON no corpo das requisições
 app.use(express.json());
 
