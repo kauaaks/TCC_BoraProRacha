@@ -2,7 +2,9 @@
 const User = require("../models/User");
 // Importa o bcrypt, usado para criptografar (hashear) senhas antes de salvar
 const bcrypt = require("bcrypt");
+import admin from "../config/firebase.js";
 
+const allowedRoles = ["admin", "representante_time", "gestor_campo", "jogador"];
 /**
  * Lista todos os usuários cadastrados no banco.
  * Não precisa de parâmetros, apenas retorna todos os registros.
@@ -32,20 +34,30 @@ async function criarUsuario(dados) {
   if (!nome || !email || !senha || !telefone || !user_type)
     throw new Error("Preencha todos os campos obrigatórios");
 
+   // 2️⃣ Verifica role válida
+  if (!allowedRoles.includes(user_type)) {
+    throw new Error("Função inválida");
+  }
+
   // 2️⃣ Verifica se já existe um usuário com o mesmo e-mail
   const jaExiste = await User.findOne({ email });
   if (jaExiste) throw new Error("Email já cadastrado");
 
-  // 3️⃣ Criptografa a senha antes de salvar no banco
-  const hashed = await bcrypt.hash(senha, 10);
+  // 3️⃣ Cria o usuário no Firebase Authentication
+  const userRecord = await admin.auth().createUser({
+    email,
+    password: senha, // Firebase gerencia a senha
+    displayName: nome,
+    phoneNumber: telefone // opcional
+  });
 
   // 4️⃣ Cria e salva o novo usuário no banco
   const novoUser = await User.create({
     nome,
     email,
-    senha: hashed,
     telefone,
-    user_type
+    user_type,
+    FirebaseUid: userRecord.uid // vincula usuário Mongo ao Firebase
   });
 
   return novoUser; // Retorna o usuário recém-criado
