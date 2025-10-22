@@ -1,4 +1,4 @@
-export function checkRole(allowedRoles = []) {
+function checkRole(allowedRoles = []) {
   return async (req, res, next) => {
     const userRole = req.user.role; // role buscado do MongoDB (vinculado via firebaseUid)
 
@@ -9,3 +9,5 @@ export function checkRole(allowedRoles = []) {
     next();
   };
 }
+
+module.exports = { checkRole };

@@ -1,8 +1,8 @@
 // Importa o model do usuário, que representa a coleção "users" no MongoDB
-const User = require("../models/User");
+const User = require("../models/user");
 // Importa o bcrypt, usado para criptografar (hashear) senhas antes de salvar
 const bcrypt = require("bcrypt");
-import admin from "../config/firebase.js";
+const admin = require("../config/firebase");
 
 const allowedRoles = ["admin", "representante_time", "gestor_campo", "jogador"];
 /**

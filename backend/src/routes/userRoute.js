@@ -3,9 +3,9 @@ const router = express.Router();
 
 const userController = require("../controllers/userController");
 
-import { verifyFirebaseToken } from "../middlewares/verifyFirebaseToken.js";
-import { attachUserRole } from "../middlewares/attachUserRole.js";
-import { checkRole } from "../middlewares/checkRole.js";
+const { verifyFirebaseToken } = require("../middlewares/verifyFirebaseToken");
+const { attachUserRole } = require("../middlewares/attachUserRole");
+const { checkRole } = require("../middlewares/checkRole");
 
 router.get("/usuarios", verifyFirebaseToken, attachUserRole, checkRole(["admin"]), userController.listarUsuarios);
 router.get("/:id", userController.buscarUsuario);

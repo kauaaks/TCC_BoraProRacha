@@ -2,7 +2,7 @@
 // Mantém registro organizado e informativo de cada requisição HTTP.
 // Útil para auditoria, diagnóstico e monitoramento da aplicação.
 
-export function logger(req, res, next) {
+function logger(req, res, next) {
   const start = Date.now(); // Marca o momento em que a requisição começou
 
   // Quando a resposta terminar de ser enviada, executa esta função
@@ -30,3 +30,5 @@ export function logger(req, res, next) {
   // Continua o fluxo normal
   next();
 }
+
+module.exports = { logger };

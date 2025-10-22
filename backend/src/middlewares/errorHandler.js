@@ -1,7 +1,7 @@
 // Middleware centralizado de tratamento de erros.
 // Intercepta erros lançados em qualquer rota ou middleware anterior.
 
-export function errorHandler(err, req, res, next) {
+function errorHandler(err, req, res, next) {
   console.error("🔥 [ERROR HANDLER]", {
     message: err.message,
     stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
@@ -24,3 +24,5 @@ export function errorHandler(err, req, res, next) {
   // Envia resposta JSON padronizada
   res.status(status).json(response);
 }
+
+module.exports = { errorHandler };

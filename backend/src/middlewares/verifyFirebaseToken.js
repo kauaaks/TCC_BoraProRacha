@@ -1,6 +1,6 @@
-import admin from "../config/firebase.js";
+const admin = require('../config/firebase');
 
-export async function verifyFirebaseToken(req, res, next) {
+async function verifyFirebaseToken(req, res, next) {
   try {
     const header = req.headers.authorization;
     if (!header || !header.startsWith("Bearer ")) {
@@ -18,3 +18,5 @@ export async function verifyFirebaseToken(req, res, next) {
     res.status(403).json({ message: "Token inválido ou expirado" });
   }
 }
+
+module.exports = { verifyFirebaseToken };
