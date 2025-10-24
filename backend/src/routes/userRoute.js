@@ -12,5 +12,6 @@ router.get("/:id", userController.buscarUsuario);
 router.post("/", userController.criarUsuario);
 router.put("/:id", userController.atualizarUsuario);
 router.delete("/:id", userController.deletarUsuario);
+router.get("/:id/stats", userController.getUserStats);
 
 module.exports = router;

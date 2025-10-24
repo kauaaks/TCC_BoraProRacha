@@ -1,6 +1,15 @@
 // Importa as funções criadas na service de usuários
 const userService = require("../services/userService");
 
+
+async function getUserStats(req,res) {
+  try{
+    const stats = await userService.getUserStats(req.params.id);
+    res.status(200).json(stats);
+  } catch (err) {
+    res.status(500).json({error: err.message});
+  }
+}
 /**
  * Controller que lista todos os usuários
  * Endpoint exemplo: GET /api/users
@@ -74,5 +83,6 @@ module.exports = {
   buscarUsuario,
   criarUsuario,
   atualizarUsuario,
-  deletarUsuario
+  deletarUsuario,
+  getUserStats
 };

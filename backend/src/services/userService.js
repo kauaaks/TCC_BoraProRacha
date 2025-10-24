@@ -1,5 +1,6 @@
 // Importa o model do usuário, que representa a coleção "users" no MongoDB
 const User = require("../models/user");
+const GameStats = require("..models/game_stats");
 // Importa o bcrypt, usado para criptografar (hashear) senhas antes de salvar
 const bcrypt = require("bcrypt");
 const admin = require("../config/firebase");
@@ -9,6 +10,61 @@ const allowedRoles = ["admin", "representante_time", "gestor_campo", "jogador"];
  * Lista todos os usuários cadastrados no banco.
  * Não precisa de parâmetros, apenas retorna todos os registros.
  */
+// ---------------------LEMBRAR DE ARRUMAR COM O UID DO FIREBASE
+async function getUserStats(userId) {
+  // ✅ Corrigido o validador do ObjectId
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("ID de usuário inválido");
+  }
+
+  // ✅ Busca todas as estatísticas do usuário
+  const stats = await GameStats.find({ user_id: userId });
+
+  // ✅ Caso o jogador não tenha estatísticas registradas
+  if (!stats || stats.length === 0) {
+    return {
+      totalPartidas: 0,
+      gols: 0,
+      assistencias: 0,
+      faltas: 0,
+      cartoesAmarelos: 0,
+      cartoesVermelhos: 0,
+      minutosJogador: 0,
+      participacoes: 0,
+      mediaGols: 0,
+    };
+  }
+
+  // ✅ Soma os valores de todas as partidas do jogador
+  const total = stats.reduce(
+    (acc, s) => {
+      acc.gols += s.goals;
+      acc.assistencias += s.assists;
+      acc.faltas += s.fouls;
+      acc.cartoesAmarelos += s.yellow_cards;
+      acc.cartoesVermelhos += s.red_cards;
+      acc.minutosJogador += s.minutes_played;
+      acc.participacoes += s.attendance ? 1 : 0;
+      return acc;
+    },
+    {
+      gols: 0,
+      assistencias: 0,
+      faltas: 0,
+      cartoesAmarelos: 0,
+      cartoesVermelhos: 0,
+      minutosJogador: 0,
+      participacoes: 0,
+    }
+  );
+
+  // ✅ Calcula os totais finais
+  total.totalPartidas = stats.length;
+  total.mediaGols = total.gols / (stats.length || 1);
+
+  return total;
+}
+// ---------------------LEMBRAR DE ARRUMAR COM O UID DO FIREBASE
 async function listarUsuarios() {
   return await User.find(); // Retorna todos os usuários encontrados no MongoDB
 }

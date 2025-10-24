@@ -47,5 +47,5 @@ module.exports = {
     buscarStatusDeJogo,
     criarStatusDeJogo,
     atualizarStatusDeJogo,
-    deletarStatusDeJogo
+    deletarStatusDeJogo,
 };
