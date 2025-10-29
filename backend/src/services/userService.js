@@ -12,13 +12,8 @@ const allowedRoles = ["admin", "representante_time", "gestor_campo", "jogador"];
  */
 // ---------------------LEMBRAR DE ARRUMAR COM O UID DO FIREBASE
 async function getUserStats(userId) {
-  // ✅ Corrigido o validador do ObjectId
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    throw new Error("ID de usuário inválido");
-  }
-
   // ✅ Busca todas as estatísticas do usuário
-  const stats = await GameStats.find({ user_id: userId });
+  const stats = await GameStats.find({ firebase_uid: userId });
 
   // ✅ Caso o jogador não tenha estatísticas registradas
   if (!stats || stats.length === 0) {
