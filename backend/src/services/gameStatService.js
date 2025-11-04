@@ -1,23 +1,24 @@
 const mongoose = require("mongoose");
-const gameStats = require("../models/game_stats"); // importa o modelo do MongoDB
+const gameStats = require("../models/game_stats");
+const User = require("../models/user"); // 🔹 importa o modelo de usuário
 
 // Lista TODAS as estatísticas de jogos do banco
 async function listarStatusDeJogos() {
-    return await gameStats.find(); // busca todos os documentos
+    return await gameStats.find();
 }
 
 // Busca uma estatística de jogo específica pelo ID do documento
 async function buscarStatusDeJogo(id) {
-    const status = await gameStats.findById(id); // procura no banco o ID recebido
-    if (!status) throw new Error("Estatística de jogo não encontrada."); // se não achar, lança erro
-    return status; // retorna o documento encontrado
+    const status = await gameStats.findById(id);
+    if (!status) throw new Error("Estatística de jogo não encontrada.");
+    return status;
 }
 
 // Cria uma nova estatística de jogo
 async function criarStatusDeJogo(dados) {
     const {
         game_id,
-        firebase_uid, //  UID do Firebase
+        firebase_uid,
         goals,
         assists,
         fouls,
@@ -27,7 +28,7 @@ async function criarStatusDeJogo(dados) {
         attendance
     } = dados;
 
-    // Valida se todos os campos obrigatórios foram preenchidos
+    // ✅ 1. Valida campos obrigatórios
     if (
         !game_id ||
         !firebase_uid ||
@@ -42,12 +43,19 @@ async function criarStatusDeJogo(dados) {
         throw new Error("Preencha todos os campos obrigatórios.");
     }
 
-    //  Verifica se já existe estatística desse jogador para o mesmo jogo
-    const jaExiste = await gameStats.findOne({ game_id, firebase_uid });
-    if (jaExiste)
-        throw new Error("Estatística de jogo já cadastrada para este jogador e jogo.");
+    // ✅ 2. Verifica se o UID existe na coleção de usuários
+    const user = await User.findOne({ firebaseUid: firebase_uid });
+    if (!user) {
+        throw new Error("Usuário com esse UID não encontrado no banco de dados.");
+    }
 
-    // Cria a nova estatística no banco
+    // ✅ 3. Verifica se já existe estatística desse jogador para o mesmo jogo
+    const jaExiste = await gameStats.findOne({ game_id, firebase_uid });
+    if (jaExiste) {
+        throw new Error("Estatística de jogo já cadastrada para este jogador e jogo.");
+    }
+
+    // ✅ 4. Cria a nova estatística no banco
     const novaEstatistica = await gameStats.create({
         game_id,
         firebase_uid,
@@ -60,43 +68,36 @@ async function criarStatusDeJogo(dados) {
         attendance
     });
 
-    return novaEstatistica; // retorna o que acabou de ser criado
+    return novaEstatistica;
 }
 
-//  Atualiza uma estatística de jogo existente
+// Atualiza uma estatística de jogo existente
 async function atualizarStatusDeJogo(id, novosDados) {
     const status = await gameStats.findByIdAndUpdate(id, novosDados, {
-        new: true, // retorna o documento atualizado
-        runValidators: true // aplica as validações do schema
+        new: true,
+        runValidators: true
     });
 
     if (!status) throw new Error("Estatística de jogo não encontrada.");
-    return status; // retorna o documento atualizado
+    return status;
 }
 
 // Deleta uma estatística de jogo pelo ID
 async function deletarStatusDeJogo(id) {
-    const status = await gameStats.findByIdAndDelete(id); // apaga o documento
+    const status = await gameStats.findByIdAndDelete(id);
     if (!status) throw new Error("Estatística de jogo não encontrada.");
     return { message: "Estatística de jogo deletada com sucesso." };
 }
 
-/**
- * Obtém as estatísticas GERAIS de um jogo específico (não de todos)
- * @param {String} gameId - ID do jogo no MongoDB
- */
+// Obtém as estatísticas GERAIS de um jogo específico
 async function getGameStats(gameId) {
-    //  Verifica se o ID é válido no formato do Mongo
     if (!mongoose.Types.ObjectId.isValid(gameId)) {
         throw new Error("ID do jogo inválido.");
     }
 
     const objectGameId = new mongoose.Types.ObjectId(gameId);
-
-    //  Busca todas as estatísticas desse jogo
     const stats = await gameStats.find({ game_id: objectGameId });
 
-    // Caso não tenha estatísticas registradas
     if (!stats || stats.length === 0) {
         return {
             game_id: gameId,
@@ -113,7 +114,6 @@ async function getGameStats(gameId) {
         };
     }
 
-    // Agrupa somando os valores e gerando médias
     const total = stats.reduce(
         (acc, s) => {
             acc.totalGols += s.goals || 0;
@@ -138,7 +138,6 @@ async function getGameStats(gameId) {
         }
     );
 
-    //  Calcula médias
     const totalJogadores = total.uids.length;
     const mediaGolsPorJogador = totalJogadores
         ? total.totalGols / totalJogadores
@@ -159,7 +158,6 @@ async function getGameStats(gameId) {
     };
 }
 
-//  Exporta todas as funções para serem usadas em rotas
 module.exports = {
     listarStatusDeJogos,
     buscarStatusDeJogo,

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const game_statsSchema = new mongoose.Schema({
     game_id: {type: mongoose.Schema.Types.ObjectId, ref: "Jogos", required: true},
-    user_id: {type: mongoose.Schema.Types.ObjectId, ref: "Usuários", required: true},
+    firebaseUid: { type: String, required: true }, 
     goals: {type: Number, default: 0},
     assists: {type: Number, default: 0},
     fouls: {type: Number, default: 0},

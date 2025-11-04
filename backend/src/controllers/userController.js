@@ -30,7 +30,7 @@ async function listarUsuarios(req, res) {
 async function buscarUsuario(req, res) {
   try {
     // req.params.id captura o ID enviado na URL
-    const user = await userService.buscarUsuarioPorId(req.params.id);
+    const user = await userService.buscarUsuarioPorId(req.params.uid);
     res.status(200).json(user); // Retorna o usuário com status 200
   } catch (err) {
     res.status(404).json({ error: err.message }); // Caso o ID não exista, erro 404
