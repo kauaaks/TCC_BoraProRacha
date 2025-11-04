@@ -1,21 +1,23 @@
-// Importa o model do usuário, que representa a coleção "users" no MongoDB
+//  Importa os models
 const User = require("../models/user");
-const GameStats = require("..models/game_stats");
-// Importa o bcrypt, usado para criptografar (hashear) senhas antes de salvar
+const GameStats = require("../models/game_stats");
+
+// Importa dependências
 const bcrypt = require("bcrypt");
 const admin = require("../config/firebase");
 
+//  Lista de roles permitidas
 const allowedRoles = ["admin", "representante_time", "gestor_campo", "jogador"];
-/**
- * Lista todos os usuários cadastrados no banco.
- * Não precisa de parâmetros, apenas retorna todos os registros.
- */
-// ---------------------LEMBRAR DE ARRUMAR COM O UID DO FIREBASE
-async function getUserStats(userId) {
-  // ✅ Busca todas as estatísticas do usuário
-  const stats = await GameStats.find({ firebase_uid: userId });
 
-  // ✅ Caso o jogador não tenha estatísticas registradas
+
+// 🧩 FUNÇÃO: getUserStats(userId)
+    // Busca e consolida estatísticas de um usuário (via UID do Firebase)
+  
+async function getUserStats(userId) {
+  //  Busca todas as estatísticas associadas ao UID do Firebase
+  const stats = await GameStats.find({ firebaseUid: userId });
+
+  //  Caso o jogador não tenha estatísticas
   if (!stats || stats.length === 0) {
     return {
       totalPartidas: 0,
@@ -30,15 +32,15 @@ async function getUserStats(userId) {
     };
   }
 
-  // ✅ Soma os valores de todas as partidas do jogador
+  // Soma e acumula os valores de todas as partidas
   const total = stats.reduce(
     (acc, s) => {
-      acc.gols += s.goals;
-      acc.assistencias += s.assists;
-      acc.faltas += s.fouls;
-      acc.cartoesAmarelos += s.yellow_cards;
-      acc.cartoesVermelhos += s.red_cards;
-      acc.minutosJogador += s.minutes_played;
+      acc.gols += s.goals || 0;
+      acc.assistencias += s.assists || 0;
+      acc.faltas += s.fouls || 0;
+      acc.cartoesAmarelos += s.yellow_cards || 0;
+      acc.cartoesVermelhos += s.red_cards || 0;
+      acc.minutosJogador += s.minutes_played || 0;
       acc.participacoes += s.attendance ? 1 : 0;
       return acc;
     },
@@ -53,97 +55,90 @@ async function getUserStats(userId) {
     }
   );
 
-  // ✅ Calcula os totais finais
+  // Calcula os totais finais
   total.totalPartidas = stats.length;
   total.mediaGols = total.gols / (stats.length || 1);
 
   return total;
 }
-// ---------------------LEMBRAR DE ARRUMAR COM O UID DO FIREBASE
+
+
+/* 🔹 Lista todos os usuários */
 async function listarUsuarios() {
-  return await User.find(); // Retorna todos os usuários encontrados no MongoDB
+  return await User.find();
 }
 
-/**
- * Busca um único usuário pelo ID.
- * @param {String} id - ID do usuário no banco (ObjectId do MongoDB)
- */
+
+/* 🔹 Busca usuário por ID (Mongo) */
 async function buscarUsuarioPorId(id) {
-  const user = await User.findById(id); // Procura o usuário com base no ID
-  if (!user) throw new Error("Usuário não encontrado"); // Caso não exista, lança erro
-  return user; // Retorna o usuário encontrado
+  const user = await User.findById(id);
+  if (!user) throw new Error("Usuário não encontrado");
+  return user;
 }
 
-/**
- * Cria um novo usuário.
- * @param {Object} dados - Dados enviados pelo cliente (nome, email, senha, etc)
- */
+
+/*  Cria novo usuário */
 async function criarUsuario(dados) {
   const { nome, email, senha, telefone, user_type } = dados;
 
-  // 1️⃣ Valida se todos os campos obrigatórios foram enviados
+  // ✅ 1. Validação básica
   if (!nome || !email || !senha || !telefone || !user_type)
     throw new Error("Preencha todos os campos obrigatórios");
 
-   // 2️⃣ Verifica role válida
-  if (!allowedRoles.includes(user_type)) {
+  // ✅ 2. Verifica role válida
+  if (!allowedRoles.includes(user_type))
     throw new Error("Função inválida");
-  }
 
-  // 2️⃣ Verifica se já existe um usuário com o mesmo e-mail
+  // ✅ 3. Verifica duplicidade de e-mail
   const jaExiste = await User.findOne({ email });
   if (jaExiste) throw new Error("Email já cadastrado");
 
-  // 3️⃣ Cria o usuário no Firebase Authentication
+  // ✅ 4. Cria no Firebase Auth
   const userRecord = await admin.auth().createUser({
     email,
-    password: senha, // Firebase gerencia a senha
+    password: senha,
     displayName: nome,
-    phoneNumber: telefone // opcional
+    phoneNumber: telefone || undefined,
   });
 
-  // 4️⃣ Cria e salva o novo usuário no banco
+  // ✅ 5. Cria no Mongo com UID do Firebase
   const novoUser = await User.create({
     nome,
     email,
     telefone,
     user_type,
-    FirebaseUid: userRecord.uid // vincula usuário Mongo ao Firebase
+    firebaseUid: userRecord.uid,
   });
 
-  return novoUser; // Retorna o usuário recém-criado
+  return novoUser;
 }
 
-/**
- * Atualiza os dados de um usuário existente.
- * @param {String} id - ID do usuário a ser atualizado
- * @param {Object} novosDados - Campos a serem atualizados
- */
+/* -------------------------------------------------------------------------- */
+/*  Atualiza dados do usuário */
 async function atualizarUsuario(id, novosDados) {
   const user = await User.findByIdAndUpdate(id, novosDados, {
-    new: true, // Retorna o objeto atualizado, não o antigo
-    runValidators: true // Respeita as validações definidas no Schema
+    new: true,
+    runValidators: true,
   });
 
   if (!user) throw new Error("Usuário não encontrado");
-  return user; // Retorna o usuário atualizado
+  return user;
 }
 
-/**
- * Deleta um usuário do banco.
- * @param {String} id - ID do usuário a ser deletado
- */
+/*  Deleta usuário */
 async function deletarUsuario(id) {
   const user = await User.findByIdAndDelete(id);
   if (!user) throw new Error("Usuário não encontrado");
-  return { message: "Usuário deletado com sucesso" }; // Retorna mensagem de sucesso
+  return { message: "Usuário deletado com sucesso" };
 }
 
-// Exporta todas as funções para serem usadas em outros arquivos (como na Controller)
+/* -------------------------------------------------------------------------- */
+/*  Exporta todas as funções */
 module.exports = {
   listarUsuarios,
   buscarUsuarioPorId,
   criarUsuario,
   atualizarUsuario,
-  deletarUsuario
+  deletarUsuario,
+  getUserStats, 
 };

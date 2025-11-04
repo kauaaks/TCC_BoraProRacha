@@ -33,10 +33,11 @@ app.use(express.json());
 // 5️⃣ Importa as rotas
 const userRoute = require('./routes/userRoute.js');
 const teamsRoute = require('./routes/teamsRoute.js');
-
+const gameStatsRoutes = require("./routes/game_statsRoute.js");
 // 6️⃣ Usa as rotas (define caminhos base)
 app.use('/users', userRoute);
 app.use('/teams', teamsRoute);
+app.use("/api/game-stats", gameStatsRoutes);
 
 // 7️⃣ Rota inicial de teste (só pra confirmar que está rodando)
 app.get('/', (req, res) => {
