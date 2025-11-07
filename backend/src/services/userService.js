@@ -1,23 +1,17 @@
-//  Importa os models
+// Importa os models
 const User = require("../models/user");
 const GameStats = require("../models/game_stats");
 
 // Importa dependências
-const bcrypt = require("bcrypt");
 const admin = require("../config/firebase");
 
-//  Lista de roles permitidas
+// Lista de roles permitidas
 const allowedRoles = ["admin", "representante_time", "gestor_campo", "jogador"];
 
-
 // 🧩 FUNÇÃO: getUserStats(userId)
-    // Busca e consolida estatísticas de um usuário (via UID do Firebase)
-  
 async function getUserStats(userId) {
-  //  Busca todas as estatísticas associadas ao UID do Firebase
   const stats = await GameStats.find({ firebaseUid: userId });
 
-  //  Caso o jogador não tenha estatísticas
   if (!stats || stats.length === 0) {
     return {
       totalPartidas: 0,
@@ -32,7 +26,6 @@ async function getUserStats(userId) {
     };
   }
 
-  // Soma e acumula os valores de todas as partidas
   const total = stats.reduce(
     (acc, s) => {
       acc.gols += s.goals || 0;
@@ -55,90 +48,109 @@ async function getUserStats(userId) {
     }
   );
 
-  // Calcula os totais finais
   total.totalPartidas = stats.length;
   total.mediaGols = total.gols / (stats.length || 1);
 
   return total;
 }
 
-
-/* 🔹 Lista todos os usuários */
+// 🔹 Lista todos os usuários
 async function listarUsuarios() {
   return await User.find();
 }
 
+// 🔹 Busca usuário por UID do Firebase no Mongo
+async function buscarUsuarioPorFirebaseUid(firebaseUid) {
+  try {
+    const user = await User.findOne({ firebaseUid });
+    return user || null;
+  } catch (err) {
+    console.error("[Service] Erro no Mongo:", err);
+    throw err;
+  }
+}
 
-/* 🔹 Busca usuário por ID (Mongo) */
+// 🔹 Busca usuário por ID (Mongo)
 async function buscarUsuarioPorId(id) {
   const user = await User.findById(id);
   if (!user) throw new Error("Usuário não encontrado");
   return user;
 }
 
-
-/*  Cria novo usuário */
-async function criarUsuario(dados) {
-  const { nome, email, senha, telefone, user_type } = dados;
-
-  // ✅ 1. Validação básica
-  if (!nome || !email || !senha || !telefone || !user_type)
-    throw new Error("Preencha todos os campos obrigatórios");
-
-  // ✅ 2. Verifica role válida
-  if (!allowedRoles.includes(user_type))
-    throw new Error("Função inválida");
-
-  // ✅ 3. Verifica duplicidade de e-mail
-  const jaExiste = await User.findOne({ email });
-  if (jaExiste) throw new Error("Email já cadastrado");
-
-  // ✅ 4. Cria no Firebase Auth
-  const userRecord = await admin.auth().createUser({
-    email,
-    password: senha,
-    displayName: nome,
-    phoneNumber: telefone || undefined,
-  });
-
-  // ✅ 5. Cria no Mongo com UID do Firebase
-  const novoUser = await User.create({
-    nome,
-    email,
-    telefone,
-    user_type,
-    firebaseUid: userRecord.uid,
-  });
-
-  return novoUser;
+// 🔹 Busca usuário no Firebase
+async function buscarUsuarioNoFirebase(firebaseUid) {
+  try {
+    const userRecord = await admin.auth().getUser(firebaseUid);
+    return userRecord;
+  } catch (err) {
+    if (err.code === "auth/user-not-found") return null;
+    throw err;
+  }
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Atualiza dados do usuário */
-async function atualizarUsuario(id, novosDados) {
-  const user = await User.findByIdAndUpdate(id, novosDados, {
-    new: true,
-    runValidators: true,
-  });
+// 🔹 Cria novo usuário (somente Mongo se UID já existir no Firebase)
+async function criarUsuario(dados) {
+  try {
+    const { nome, telefone, user_type, firebaseUid } = dados;
 
+    // validação básica
+    if (!nome || !telefone || !user_type || !firebaseUid)
+      throw new Error("Preencha todos os campos obrigatórios");
+
+    if (!allowedRoles.includes(user_type))
+      throw new Error(`Função inválida. Permitidas: ${allowedRoles.join(", ")}`);
+
+    // ✅ Verifica se já existe no Mongo pelo firebaseUid
+    let existingUser = await User.findOne({ firebaseUid });
+    if (existingUser) {
+      console.log("[Service] Usuário já existe no Mongo:", existingUser);
+      return existingUser; // Retorna o usuário existente
+    }
+
+    // Cria usuário no Mongo
+    const novoUser = await User.create({
+      nome,
+      telefone,
+      user_type,
+      firebaseUid,
+      ativo: true,
+    });
+
+    console.log("[Service] Usuário criado no Mongo:", novoUser);
+
+    return {
+      success: true,
+      message: "Usuário criado no Mongo com sucesso",
+      user: novoUser,
+    };
+  } catch (err) {
+    console.error("[Service] Erro ao criar usuário:", err.message);
+    throw err;
+  }
+}
+
+// 🔹 Atualiza dados do usuário
+async function atualizarUsuario(id, novosDados) {
+  const user = await User.findByIdAndUpdate(id, novosDados, { new: true, runValidators: true });
   if (!user) throw new Error("Usuário não encontrado");
   return user;
 }
 
-/*  Deleta usuário */
+// 🔹 Deleta usuário
 async function deletarUsuario(id) {
   const user = await User.findByIdAndDelete(id);
   if (!user) throw new Error("Usuário não encontrado");
   return { message: "Usuário deletado com sucesso" };
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Exporta todas as funções */
+// Exporta todas as funções
 module.exports = {
   listarUsuarios,
   buscarUsuarioPorId,
   criarUsuario,
   atualizarUsuario,
   deletarUsuario,
-  getUserStats, 
+  getUserStats,
+  buscarUsuarioPorFirebaseUid,
+  buscarUsuarioNoFirebase,
 };
