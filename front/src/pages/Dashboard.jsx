@@ -33,19 +33,19 @@ export default function Dashboard() {
             apiCall('/games'),
             apiCall('/payments')
           )
-        } else if (user?.user_type === 'field_manager') {
+        } else if (user?.user_type === 'gestor_campo') {
           promises.push(
             apiCall('/fields'),
             apiCall('/games'),
             apiCall('/teams')
           )
-        } else if (user?.user_type === 'team_rep') {
+        } else if (user?.user_type === 'representante_time') {
           promises.push(
             apiCall('/teams'),
             apiCall('/games'),
             apiCall('/payments')
           )
-        } else if (user?.user_type === 'player') {
+        } else if (user?.user_type === 'jogador') {
           promises.push(apiCall('/games'))
         }
 
@@ -71,9 +71,9 @@ export default function Dashboard() {
   if (loading) return <div className="p-6">Carregando...</div>
 
   if (user?.user_type === 'admin') return <AdminDashboard data={data} />
-  if (user?.user_type === 'field_manager') return <FieldManagerDashboard data={data} />
-  if (user?.user_type === 'team_rep') return <TeamRepDashboard data={data} />
-  if (user?.user_type === 'player') return <PlayerDashboard data={data} />
+  if (user?.user_type === 'gestor_campo') return <FieldManagerDashboard data={data} />
+  if (user?.user_type === 'representante_time') return <TeamRepDashboard data={data} />
+  if (user?.user_type === 'jogador') return <PlayerDashboard data={data} />
 
   return <div className="p-6">Perfil de usuário desconhecido.</div>
 }

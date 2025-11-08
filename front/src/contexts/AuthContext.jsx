@@ -4,7 +4,8 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signOut,
-  getIdToken
+  getIdToken,
+  updateProfile
 } from 'firebase/auth'
 import { auth } from '../services/ConfigFirebase'
 
@@ -21,34 +22,50 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [token, setToken] = useState(null)
 
-  // Busca usuário no MongoDB pelo firebaseUid
+  // 🔹 Função para buscar usuário do Mongo pelo UID Firebase
   const fetchMongoUser = async (firebaseUid, idToken) => {
     try {
       const res = await fetch(`http://localhost:5000/users/firebase/${firebaseUid}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       })
+
       if (!res.ok) {
-        console.warn('Usuário não encontrado no Mongo', res.status)
+        console.warn('Usuário não encontrado no MongoDB. Código:', res.status)
         return null
       }
-      const data = await res.json()
-      return data
+
+      return await res.json()
     } catch (err) {
-      console.error('Erro fetchMongoUser:', err.message)
+      console.error('Erro ao buscar usuário no MongoDB:', err)
       return null
     }
   }
 
-  // Monitora mudanças de estado do usuário Firebase
+  // 🔹 Monitora mudanças de login do Firebase
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const idToken = await getIdToken(firebaseUser)
-        setToken(idToken)
-        localStorage.setItem('token', idToken)
+        try {
+          const idToken = await getIdToken(firebaseUser, true)
+          setToken(idToken)
+          localStorage.setItem('token', idToken)
 
-        const mongoUser = await fetchMongoUser(firebaseUser.uid, idToken)
-        setUser(mongoUser ? { ...firebaseUser, ...mongoUser } : firebaseUser)
+          const mongoUser = await fetchMongoUser(firebaseUser.uid, idToken)
+
+          // 🔹 Sincroniza displayName com nome do Mongo, se necessário
+          if (mongoUser?.nome && !firebaseUser.displayName) {
+            await updateProfile(firebaseUser, { displayName: mongoUser.nome })
+          }
+
+          const mergedUser = mongoUser
+            ? { ...firebaseUser, ...mongoUser }
+            : firebaseUser
+            
+          setUser(mergedUser)
+        } catch (err) {
+          console.error('Erro ao carregar dados do usuário:', err)
+          setUser(null)
+        }
       } else {
         setUser(null)
         setToken(null)
@@ -59,33 +76,39 @@ export function AuthProvider({ children }) {
     return unsubscribe
   }, [])
 
-  // Login via Firebase + busca Mongo
+  // 🔹 Login
   const login = async (email, password) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
-      const firebaseUser = userCredential.user
+      const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password)
       const idToken = await getIdToken(firebaseUser)
       setToken(idToken)
       localStorage.setItem('token', idToken)
 
       const mongoUser = await fetchMongoUser(firebaseUser.uid, idToken)
-      setUser(mongoUser ? { ...firebaseUser, ...mongoUser } : firebaseUser)
-      return { success: true }
+
+      if (mongoUser?.nome && !firebaseUser.displayName)
+        await updateProfile(firebaseUser, { displayName: mongoUser.nome })
+
+      const mergedUser = mongoUser ? { ...firebaseUser, ...mongoUser } : firebaseUser
+      setUser(mergedUser)
+
+      return { success: true, user: mergedUser }
     } catch (error) {
       console.error('Erro no login:', error)
       return { success: false, error: error.message }
     }
   }
 
-  // Registro via Firebase + Mongo
+  // 🔹 Registro
   const register = async ({ email, password, nome, telefone, user_type }) => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      const firebaseUser = userCredential.user
+      const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password)
       const idToken = await getIdToken(firebaseUser)
 
-      // Envia dados restantes para a API (Mongo)
-      const response = await fetch('http://localhost:5000/users/', {
+      // 🔸 Atualiza nome no Firebase
+      await updateProfile(firebaseUser, { displayName: nome })
+
+      const res = await fetch('http://localhost:5000/users/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,65 +122,68 @@ export function AuthProvider({ children }) {
         }),
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        // Deleta usuário do Firebase se falhar
+      const data = await res.json()
+      if (!res.ok) {
         await firebaseUser.delete()
-        return { success: false, error: data.error || 'Falha ao salvar dados do usuário na API' }
+        return { success: false, error: data.error || 'Erro ao salvar usuário no MongoDB' }
       }
 
-      setUser({ ...firebaseUser, ...data })
+      const mergedUser = { ...firebaseUser, ...data }
+      setUser(mergedUser)
       setToken(idToken)
       localStorage.setItem('token', idToken)
-      return { success: true }
+
+      return { success: true, user: mergedUser }
     } catch (error) {
       console.error('Erro no registro:', error)
       return { success: false, error: error.message }
     }
   }
 
-  // Logout
-  const logout = () => {
-    signOut(auth)
-    setUser(null)
-    setToken(null)
-    localStorage.removeItem('token')
+  // 🔹 Logout
+  const logout = async () => {
+    try {
+      await signOut(auth)
+    } finally {
+      setUser(null)
+      setToken(null)
+      localStorage.removeItem('token')
+    }
   }
 
-  // Requisições à API com token
+  // 🔹 Requisições à API autenticadas
   const apiCall = async (endpoint, options = {}) => {
     const API_BASE_URL = 'http://localhost:5000'
-    const url = `${API_BASE_URL}${endpoint}`
     const currentToken = token || localStorage.getItem('token')
 
-    const config = {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
       headers: {
         'Content-Type': 'application/json',
         ...(currentToken && { Authorization: `Bearer ${currentToken}` }),
         ...options.headers,
       },
       credentials: 'include',
-      ...options,
-    }
+    })
 
+    let data
     try {
-      const response = await fetch(url, config)
-      let data
-      try { data = await response.json() } 
-      catch (e) { data = { error: 'Resposta inválida do servidor' } }
-
-      if (response.status === 401) {
-        logout()
-        throw new Error('Sessão expirada')
-      }
-      if (!response.ok) throw new Error(data.error || 'Erro na requisição')
-
-      return data
-    } catch (error) {
-      console.error('Erro na API:', error)
-      return { error: error.message, data: [] }
+      data = await res.json()
+    } catch {
+      data = { error: 'Resposta inválida do servidor' }
     }
+
+    if (res.status === 401) {
+      console.warn('Token expirado, deslogando...')
+      logout()
+      throw new Error('Sessão expirada')
+    }
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Erro na requisição')
+    }
+
+    return data
   }
 
   const value = { user, loading, login, register, logout, apiCall }

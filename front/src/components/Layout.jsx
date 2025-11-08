@@ -56,14 +56,14 @@ export default function Layout({ children }) {
       ]
     }
 
-    if (userType === 'field_manager') {
+    if (userType === 'gestor_campo') {
       return [
         ...common,
         { name: 'Meus Campos', href: '/fields', icon: MapPin }
       ]
     }
 
-    if (userType === 'team_rep') {
+    if (userType === 'representante_time') {
       return [
     ...common,
     { name: 'Meu Time', href: '/my-team', icon: Users },
@@ -73,7 +73,7 @@ export default function Layout({ children }) {
 
 
 
-    if (userType === 'player') {
+    if (userType === 'jogador') {
       return common
     }
 
@@ -104,9 +104,9 @@ export default function Layout({ children }) {
   const getUserTypeLabel = (userType) => {
     const types = {
       'admin': 'Administrador',
-      'field_manager': 'Gestor de Campo',
-      'team_rep': 'Representante',
-      'player': 'Jogador'
+      'gestor_campo': 'Gestor de Campo',
+      'representante_time': 'Representante',
+      'jogador': 'Jogador'
     }
     return types[userType] || 'Usuário'
   }

@@ -66,7 +66,7 @@ function AppRoutes() {
       <Route
         path="/my-team"
         element={
-          <PrivateRoute allowedTypes={['team_rep']}>
+          <PrivateRoute allowedTypes={['representante_time']}>
             <Layout>
               <MyTeam />
             </Layout>
