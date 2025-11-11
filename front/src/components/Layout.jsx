@@ -66,8 +66,7 @@ export default function Layout({ children }) {
     if (userType === 'representante_time') {
       return [
     ...common,
-    { name: 'Meu Time', href: '/my-team', icon: Users },
-    { name: 'Financeiro', href: '/payments', icon: CreditCard }
+    { name: 'Meu Time', href: '/my-team', icon: Users }
   ]
 }
 
@@ -120,7 +119,7 @@ export default function Layout({ children }) {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">Bora Pro Racha</h1>
-          <p className="text-xs text-gray-500">{getUserTypeLabel(user?.user_type)}</p>
+          <p className="text-xs text-gray-500">{user?.displayName} {user?.user_type && `• ${getUserTypeLabel(user.user_type)}`}</p>
         </div>
       </div>
 

@@ -12,6 +12,7 @@ import Teams from './components/Teams'
 import Games from './components/Games'
 import Payments from './components/Payments'
 import Stats from './components/Stats'
+import Profile from './pages/Profile'
 
 import PrivateRoute from './routes/PrivateRoute'
 
@@ -118,7 +119,21 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+
+      <Route
+        path="/profile"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Profile />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+
     </Routes>
+
+      
   )
 }
 
