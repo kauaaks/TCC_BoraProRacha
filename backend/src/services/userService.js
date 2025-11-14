@@ -1,14 +1,14 @@
-// Importa os models
+
 const User = require("../models/user");
 const GameStats = require("../models/game_stats");
 
-// Importa dependências
+
 const admin = require("../config/firebase");
 
 // Lista de roles permitidas
 const allowedRoles = ["admin", "representante_time", "gestor_campo", "jogador"];
 
-// 🧩 FUNÇÃO: getUserStats(userId)
+//FUNÇÃO: getUserStats(userId)
 async function getUserStats(userId) {
   const stats = await GameStats.find({ firebaseUid: userId });
 
@@ -54,12 +54,12 @@ async function getUserStats(userId) {
   return total;
 }
 
-// 🔹 Lista todos os usuários
+// Lista todos os usuários
 async function listarUsuarios() {
   return await User.find();
 }
 
-// 🔹 Busca usuário por UID do Firebase no Mongo
+// Busca usuário por UID do Firebase no Mongo
 async function buscarUsuarioPorFirebaseUid(firebaseUid) {
   try {
     const user = await User.findOne({ firebaseUid });
@@ -70,14 +70,14 @@ async function buscarUsuarioPorFirebaseUid(firebaseUid) {
   }
 }
 
-// 🔹 Busca usuário por ID (Mongo)
+// Busca usuário por ID (Mongo)
 async function buscarUsuarioPorId(id) {
   const user = await User.findById(id);
   if (!user) throw new Error("Usuário não encontrado");
   return user;
 }
 
-// 🔹 Busca usuário no Firebase
+// Busca usuário no Firebase
 async function buscarUsuarioNoFirebase(firebaseUid) {
   try {
     const userRecord = await admin.auth().getUser(firebaseUid);
@@ -88,7 +88,7 @@ async function buscarUsuarioNoFirebase(firebaseUid) {
   }
 }
 
-// 🔹 Cria novo usuário (somente Mongo se UID já existir no Firebase)
+// Cria novo usuário (somente Mongo se UID já existir no Firebase)
 async function criarUsuario(dados) {
   try {
     const { nome, telefone, user_type, firebaseUid } = dados;
@@ -100,7 +100,7 @@ async function criarUsuario(dados) {
     if (!allowedRoles.includes(user_type))
       throw new Error(`Função inválida. Permitidas: ${allowedRoles.join(", ")}`);
 
-    // ✅ Verifica se já existe no Mongo pelo firebaseUid
+    //  Verifica se já existe no Mongo pelo firebaseUid
     let existingUser = await User.findOne({ firebaseUid });
     if (existingUser) {
       console.log("[Service] Usuário já existe no Mongo:", existingUser);
@@ -129,14 +129,14 @@ async function criarUsuario(dados) {
   }
 }
 
-// 🔹 Atualiza dados do usuário
+//  Atualiza dados do usuário
 async function atualizarUsuario(id, novosDados) {
   const user = await User.findByIdAndUpdate(id, novosDados, { new: true, runValidators: true });
   if (!user) throw new Error("Usuário não encontrado");
   return user;
 }
 
-// 🔹 Deleta usuário
+//  Deleta usuário
 async function deletarUsuario(id) {
   const user = await User.findByIdAndDelete(id);
   if (!user) throw new Error("Usuário não encontrado");

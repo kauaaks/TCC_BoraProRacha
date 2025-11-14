@@ -1,6 +1,6 @@
 const userService = require("../services/userService");
 
-// 🔹 Buscar usuário pelo Firebase UID
+// Buscar usuário pelo Firebase UID
 async function buscarUsuarioPorFirebaseUid(req, res) {
   const { uid } = req.params;
   console.log("[Controller] Buscar usuário por Firebase UID:", uid);
@@ -37,7 +37,7 @@ async function buscarUsuarioPorFirebaseUid(req, res) {
   }
 }
 
-// 🔹 Criar usuário via POST
+// Criar usuário via POST
 async function criarUsuario(req, res) {
   const { firebaseUid, nome, telefone, user_type } = req.body;
   console.log("[Controller] Criar usuário, body recebido:", req.body);
@@ -76,7 +76,7 @@ async function criarUsuario(req, res) {
   }
 }
 
-// 🔹 Listar todos os usuários
+// Listar todos os usuários
 async function listarUsuarios(req, res) {
   try {
     const users = await userService.listarUsuarios();
@@ -87,7 +87,7 @@ async function listarUsuarios(req, res) {
   }
 }
 
-// 🔹 Atualizar usuário
+// Atualizar usuário
 async function atualizarUsuario(req, res) {
   try {
     const user = await userService.atualizarUsuario(req.params.id, req.body);
@@ -98,7 +98,7 @@ async function atualizarUsuario(req, res) {
   }
 }
 
-// 🔹 Deletar usuário
+// Deletar usuário
 async function deletarUsuario(req, res) {
   try {
     const result = await userService.deletarUsuario(req.params.id);
@@ -109,7 +109,7 @@ async function deletarUsuario(req, res) {
   }
 }
 
-// 🔹 Estatísticas do usuário
+// Estatísticas do usuário
 async function getUserStats(req, res) {
   try {
     const stats = await userService.getUserStats(req.params.id);
