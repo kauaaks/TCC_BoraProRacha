@@ -130,9 +130,55 @@ async function criarUsuario(dados) {
 }
 
 //  Atualiza dados do usuário
-async function atualizarUsuario(id, novosDados) {
-  const user = await User.findByIdAndUpdate(id, novosDados, { new: true, runValidators: true });
-  if (!user) throw new Error("Usuário não encontrado");
+const ALLOW_UPDATE = new Set(["nome", "telefone", "ativo", "user_type"]);
+
+// util: filtra apenas campos permitidos
+function pickAllowed(data) {
+  const out = {};
+  for (const k of Object.keys(data || {})) {
+    if (ALLOW_UPDATE.has(k)) out[k] = data[k];
+  }
+  return out;
+}
+
+/**
+ * Atualiza dados do usuário autenticado usando o Firebase UID.
+ * NÃO aceita 'id' vindo do cliente. Passe sempre o uid do token.
+ * Exemplo de uso no controller: atualizarUsuario(req.user.uid, req.body)
+ */
+async function atualizarUsuario(firebaseUidAutenticado, novosDados) {
+  if (!firebaseUidAutenticado) {
+    const err = new Error("UID ausente");
+    err.status = 401;
+    throw err;
+  }
+
+  const update = pickAllowed(novosDados);
+
+  // regras opcionais de normalização
+  if (update.nome) update.nome = String(update.nome).trim();
+  if (update.telefone) update.telefone = String(update.telefone).trim();
+
+  // se permitir mudar role, valide contra allowedRoles
+  if (Object.prototype.hasOwnProperty.call(update, "user_type")) {
+    if (!allowedRoles.includes(update.user_type)) {
+      const err = new Error(`Função inválida. Permitidas: ${allowedRoles.join(", ")}`);
+      err.status = 400;
+      throw err;
+    }
+  }
+
+  const user = await User.findOneAndUpdate(
+    { firebaseUid: firebaseUidAutenticado },
+    update,
+    { new: true, runValidators: true }
+  );
+
+  if (!user) {
+    const err = new Error("Usuário não encontrado");
+    err.status = 404;
+    throw err;
+  }
   return user;
 }
 

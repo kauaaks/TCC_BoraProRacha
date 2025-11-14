@@ -88,13 +88,15 @@ async function listarUsuarios(req, res) {
 }
 
 // Atualizar usuário
-async function atualizarUsuario(req, res) {
+async function atualizarUsuarioMe(req, res) {
   try {
-    const user = await userService.atualizarUsuario(req.params.id, req.body);
-    res.status(200).json(user);
-  } catch (err) {
-    console.error("[Controller] Erro ao atualizar usuário:", err);
-    res.status(400).json({ error: err.message });
+    if (!req.user || !req.user.uid) {
+      return res.status(401).json({ error: true, message: "Não autenticado" });
+    }
+    const user = await userService.atualizarUsuario(req.user.uid, req.body);
+    return res.json({ user });
+  } catch (e) {
+    return res.status(e.status || 400).json({ error: true, message: e.message });
   }
 }
 
@@ -125,7 +127,7 @@ module.exports = {
   buscarUsuarioPorFirebaseUid,
   criarUsuario,
   listarUsuarios,
-  atualizarUsuario,
+  atualizarUsuarioMe,
   deletarUsuario,
   getUserStats,
 };

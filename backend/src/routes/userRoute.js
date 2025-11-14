@@ -17,7 +17,7 @@ router.get("/firebase/:uid", verifyFirebaseToken, userController.buscarUsuarioPo
 router.post("/", userController.criarUsuario);
 
 // Atualizar usuário
-router.put("/:id", userController.atualizarUsuario);
+router.put("/me", verifyFirebaseToken, userController.atualizarUsuarioMe);
 
 // Deletar usuário
 router.delete("/:id", userController.deletarUsuario);
