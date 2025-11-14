@@ -27,7 +27,7 @@ export default function GameStatsForm({ teamId }) {
     setMessage('')
 
     try {
-      const response = await apiCall(`/teams/${teamId}/stats`, {
+      const response = await apiCall(`/gamestats/${teamId}/stats`, {
         method: 'POST',
         body: JSON.stringify(form)
       })

@@ -55,7 +55,7 @@ function AppRoutes() {
       <Route
         path="/fields"
         element={
-          <PrivateRoute allowedTypes={['field_manager']}>
+          <PrivateRoute allowedTypes={['gestor_campo']}>
             <Layout>
               <FieldsManager />
             </Layout>

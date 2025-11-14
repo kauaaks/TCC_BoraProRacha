@@ -16,20 +16,28 @@ export default function MyTeam() {
     loadTeamInfo()
   }, [])
 
-  const loadTeamInfo = async () => {
-    try {
-      setLoading(true)
-      const teamRes = await apiCall('/teams/my-team')
-      const membersRes = await apiCall(`/teams/${teamRes.team.id}/members`)
-
-      setTeam(teamRes.team)
-      setMembers(membersRes.members || [])
-    } catch (error) {
-      console.error('Erro ao carregar informações do time:', error)
-    } finally {
-      setLoading(false)
+ const loadTeamInfo = async () => {
+  try {
+    setLoading(true)
+    
+    // Pega o time do usuário logado
+    const teamRes = await apiCall('/teams/me')
+    if (!teamRes.team) {
+      setTeam(null)
+      return
     }
+
+    // Pega os membros do time
+    const membersRes = await apiCall(`/teams/${teamRes.team.id}/members`)
+
+    setTeam(teamRes.team)
+    setMembers(membersRes.members || [])
+  } catch (error) {
+    console.error('Erro ao carregar informações do time:', error)
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <div className="space-y-6">
@@ -66,10 +74,9 @@ export default function MyTeam() {
                 members.map(member => (
                   <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
                     <div>
-                      <p className="font-medium">{member.name}</p>
-                      <p className="text-sm text-gray-600">{member.email}</p>
+                      <p className="font-medium">{member.nome}</p>
                     </div>
-                    <Badge variant="outline">{member.position || 'Jogador'}</Badge>
+                    <Badge variant="outline">{member.user_type || 'Jogador'}</Badge>
                   </div>
                 ))
               ) : (

@@ -30,7 +30,7 @@ export default function Teams() {
   const [success, setSuccess] = useState('')
 
   const [newTeam, setNewTeam] = useState({
-    name: '',
+    nome: '',
     description: '',
     monthly_fee: 30
   })
@@ -52,28 +52,45 @@ export default function Teams() {
     }
   }
 
-  const handleCreateTeam = async (e) => {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
+ const handleCreateTeam = async (e) => {
+  e.preventDefault()
+  setError('')
+  setSuccess('')
 
-    try {
-      const response = await apiCall('/teams', {
-        method: 'POST',
-        body: JSON.stringify(newTeam)
+  try {
+    // Certifique-se de enviar JSON corretamente
+    const response = await apiCall('/teams', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        nome: newTeam.nome,
+        description: newTeam.description,
+        monthly_fee: parseFloat(newTeam.monthly_fee) || 0,
+        created_by: user?.uid 
       })
+    })
 
-      setSuccess('Time criado com sucesso!')
-      setNewTeam({ name: '', description: '', monthly_fee: 30 })
-      setIsCreateDialogOpen(false)
-      loadTeams()
-    } catch (error) {
-      setError(error.message || 'Erro ao criar time')
+    // Se o backend retornar algum erro dentro do JSON
+    if (response.error) {
+      setError(response.error)
+      return
     }
+
+    setSuccess('Time criado com sucesso!')
+    setNewTeam({ nome: '', description: '', monthly_fee: 30 })
+    setIsCreateDialogOpen(false)
+    loadTeams()
+  } catch (error) {
+    console.error('Erro ao criar time:', error)
+    setError(error.message || 'Erro ao criar time')
   }
+}
+
 
   const filteredTeams = teams.filter(team =>
-    team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    team.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     team.description?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -101,8 +118,8 @@ export default function Teams() {
 
   const canCreateTeam = () => {
     return user?.user_type === 'admin' || 
-           user?.user_type === 'team_rep' || 
-           user?.user_type === 'field_manager'
+           user?.user_type === 'representante_time' || 
+           user?.user_type === 'gestor_campo'
   }
 
   if (loading) {
@@ -151,8 +168,8 @@ export default function Teams() {
                   <Label htmlFor="name">Nome do Time</Label>
                   <Input
                     id="name"
-                    value={newTeam.name}
-                    onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                    value={newTeam.nome}
+                    onChange={(e) => setNewTeam({ ...newTeam, nome: e.target.value })}
                     placeholder="Ex: Amigos FC"
                     required
                   />

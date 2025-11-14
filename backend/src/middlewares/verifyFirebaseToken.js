@@ -1,6 +1,7 @@
 const admin = require('../config/firebase');
 
 async function verifyFirebaseToken(req, res, next) {
+  console.log("Middleware ativado");
   try {
     const header = req.headers.authorization;
     if (!header || !header.startsWith("Bearer ")) {

@@ -40,12 +40,16 @@ app.get('/health', async (req, res) => {
 // 5️⃣ Importa rotas
 const userRoute = require('./routes/userRoute.js');
 const teamsRoute = require('./routes/teamsRoute.js');
-const gameStatsRoutes = require("./routes/game_statsRoute.js");
+const gameStatsRoute = require("./routes/game_statsRoute.js");
+const gamesRoute = require ("./routes/gamesRoute.js");
+const paymentRoute = require ("./routes/paymentsRoute.js")
 
 // 6️⃣ Usa rotas
 app.use('/users', userRoute);          // ex: /users, /users/uid/:uid
 app.use('/teams', teamsRoute);         // ex: /teams
-app.use('/api/game-stats', gameStatsRoutes); // ex: /api/game-stats
+app.use('/gamestats', gameStatsRoute); // ex: /api/game-stats
+app.use('/games', gamesRoute);
+app.use('/payments', paymentRoute);
 
 // 7️⃣ Rota raiz
 app.get('/', (req, res) => {
