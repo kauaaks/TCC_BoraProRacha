@@ -70,23 +70,6 @@ async function buscarUsuarioPorFirebaseUid(firebaseUid) {
   }
 }
 
-// Busca usuário por ID (Mongo)
-async function buscarUsuarioPorId(id) {
-  const user = await User.findById(id);
-  if (!user) throw new Error("Usuário não encontrado");
-  return user;
-}
-
-// Busca usuário no Firebase
-async function buscarUsuarioNoFirebase(firebaseUid) {
-  try {
-    const userRecord = await admin.auth().getUser(firebaseUid);
-    return userRecord;
-  } catch (err) {
-    if (err.code === "auth/user-not-found") return null;
-    throw err;
-  }
-}
 
 // Cria novo usuário (somente Mongo se UID já existir no Firebase)
 async function criarUsuario(dados) {
@@ -192,11 +175,9 @@ async function deletarUsuario(id) {
 // Exporta todas as funções
 module.exports = {
   listarUsuarios,
-  buscarUsuarioPorId,
   criarUsuario,
   atualizarUsuario,
   deletarUsuario,
   getUserStats,
-  buscarUsuarioPorFirebaseUid,
-  buscarUsuarioNoFirebase,
+  buscarUsuarioPorFirebaseUid
 };
