@@ -1,14 +1,10 @@
 
 const User = require("../models/user");
 const GameStats = require("../models/game_stats");
-
-
 const admin = require("../config/firebase");
-
-// Lista de roles permitidas
 const allowedRoles = ["admin", "representante_time", "gestor_campo", "jogador"];
 
-//FUNÇÃO: getUserStats(userId)
+
 async function getUserStats(userId) {
   const stats = await GameStats.find({ firebaseUid: userId });
 
@@ -54,12 +50,12 @@ async function getUserStats(userId) {
   return total;
 }
 
-// Lista todos os usuários
+
 async function listarUsuarios() {
   return await User.find();
 }
 
-// Busca usuário por UID do Firebase no Mongo
+
 async function buscarUsuarioPorFirebaseUid(firebaseUid) {
   try {
     const user = await User.findOne({ firebaseUid });
@@ -71,26 +67,24 @@ async function buscarUsuarioPorFirebaseUid(firebaseUid) {
 }
 
 
-// Cria novo usuário (somente Mongo se UID já existir no Firebase)
+
 async function criarUsuario(dados) {
   try {
     const { nome, telefone, user_type, firebaseUid } = dados;
 
-    // validação básica
     if (!nome || !telefone || !user_type || !firebaseUid)
       throw new Error("Preencha todos os campos obrigatórios");
 
     if (!allowedRoles.includes(user_type))
       throw new Error(`Função inválida. Permitidas: ${allowedRoles.join(", ")}`);
 
-    //  Verifica se já existe no Mongo pelo firebaseUid
     let existingUser = await User.findOne({ firebaseUid });
     if (existingUser) {
       console.log("[Service] Usuário já existe no Mongo:", existingUser);
-      return existingUser; // Retorna o usuário existente
+      return existingUser; 
     }
 
-    // Cria usuário no Mongo
+    
     const novoUser = await User.create({
       nome,
       telefone,
@@ -112,10 +106,10 @@ async function criarUsuario(dados) {
   }
 }
 
-//  Atualiza dados do usuário
+
 const ALLOW_UPDATE = new Set(["nome", "telefone", "ativo", "user_type"]);
 
-// util: filtra apenas campos permitidos
+
 function pickAllowed(data) {
   const out = {};
   for (const k of Object.keys(data || {})) {
@@ -124,11 +118,7 @@ function pickAllowed(data) {
   return out;
 }
 
-/**
- * Atualiza dados do usuário autenticado usando o Firebase UID.
- * NÃO aceita 'id' vindo do cliente. Passe sempre o uid do token.
- * Exemplo de uso no controller: atualizarUsuario(req.user.uid, req.body)
- */
+
 async function atualizarUsuario(firebaseUidAutenticado, novosDados) {
   if (!firebaseUidAutenticado) {
     const err = new Error("UID ausente");
@@ -138,11 +128,11 @@ async function atualizarUsuario(firebaseUidAutenticado, novosDados) {
 
   const update = pickAllowed(novosDados);
 
-  // regras opcionais de normalização
+  
   if (update.nome) update.nome = String(update.nome).trim();
   if (update.telefone) update.telefone = String(update.telefone).trim();
 
-  // se permitir mudar role, valide contra allowedRoles
+  
   if (Object.prototype.hasOwnProperty.call(update, "user_type")) {
     if (!allowedRoles.includes(update.user_type)) {
       const err = new Error(`Função inválida. Permitidas: ${allowedRoles.join(", ")}`);
@@ -165,14 +155,14 @@ async function atualizarUsuario(firebaseUidAutenticado, novosDados) {
   return user;
 }
 
-//  Deleta usuário
+
 async function deletarUsuario(id) {
   const user = await User.findByIdAndDelete(id);
   if (!user) throw new Error("Usuário não encontrado");
   return { message: "Usuário deletado com sucesso" };
 }
 
-// Exporta todas as funções
+
 module.exports = {
   listarUsuarios,
   criarUsuario,

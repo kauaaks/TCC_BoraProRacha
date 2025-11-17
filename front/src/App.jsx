@@ -7,7 +7,7 @@ import Dashboard from './pages/Dashboard'
 import AdminPanel from './pages/AdminPanel'
 import FieldsManager from './pages/FieldsManager'
 import MyTeam from './pages/MyTeam'
-
+import InviteAccept from './pages/InviteAccept'
 import Teams from './components/Teams'
 import Games from './components/Games'
 import Payments from './components/Payments'
@@ -26,7 +26,16 @@ function AppRoutes() {
       {/* Login */}
       <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
       <Route path="/" element={<Navigate to="/dashboard" />} />
-
+      <Route
+        path="/convite/:token"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <InviteAccept />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
       {/* Dashboard para qualquer usuário autenticado */}
       <Route
         path="/dashboard"
@@ -67,7 +76,7 @@ function AppRoutes() {
       <Route
         path="/my-team"
         element={
-          <PrivateRoute allowedTypes={['representante_time']}>
+          <PrivateRoute allowedTypes={['representante_time', 'jogador']}>
             <Layout>
               <MyTeam />
             </Layout>

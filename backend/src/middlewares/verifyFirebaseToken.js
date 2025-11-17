@@ -1,4 +1,6 @@
 const admin = require('../config/firebase');
+const Users = require('../models/user'); 
+const USERS_UID_FIELD = 'firebaseUid';
 
 async function verifyFirebaseToken(req, res, next) {
   console.log("Middleware ativado");
@@ -10,9 +12,18 @@ async function verifyFirebaseToken(req, res, next) {
 
     const token = header.split(" ")[1];
     const decoded = await admin.auth().verifyIdToken(token);
+    const uid = decoded.uid;
+    const user = await Users.findOne({ [USERS_UID_FIELD]: uid })
+      .select('_id user_type nome email') 
+      .lean();
 
-    // Dados do usuário decodificado (uid, email, etc)
-    req.user = decoded;
+    
+    req.user = {
+      uid,
+      ...(decoded || {}),
+      ...(user ? { id: String(user._id), _id: user._id, user_type: user.user_type, nome: user.nome, email: user.email } : {})
+    };
+
     next();
   } catch (err) {
     console.error("Erro na verificação do token:", err.message);

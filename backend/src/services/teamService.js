@@ -1,7 +1,7 @@
 const teams = require('../models/teams');
 const user = require('../models/user');
 
-// Utilitário: transforma array heterogêneo em array de UIDs em string
+
 function toUidArray(arr) {
   return (Array.isArray(arr) ? arr : [])
     .map((x) => {
@@ -12,10 +12,10 @@ function toUidArray(arr) {
     .filter(Boolean);
 }
 
-// Normaliza documento de team para formato consistente
+
 function normalizeTeam(doc) {
   if (!doc) return null;
-  // created_by pode ter sido salvo como string (uid) ou objeto { uid, user_type }
+  
   const created_by_uid =
     doc.created_by_firebaseUid
       ? String(doc.created_by_firebaseUid)
@@ -39,14 +39,14 @@ function normalizeTeam(doc) {
   };
 }
 
-// Lista geral
+
 async function listarTimes() {
   return await teams.find();
 }
 
-// Encontra UM time onde o usuário é membro (compatível com seu uso legado)
+
 async function meuTime(uid) {
-  // cobre: criador, representante, membro (strings e subdocs)
+  
   const filter = {
     $or: [
       { created_by: uid },
@@ -109,7 +109,7 @@ async function buscarTime(id) {
   return team;
 }
 
-// Criação (aceita dados que o controller montou)
+
 async function criarTime(dados) {
   const { nome, description, logo_url, created_by, monthly_fee, members } = dados;
 
@@ -120,14 +120,11 @@ async function criarTime(dados) {
   const jaExiste = await teams.findOne({ nome });
   if (jaExiste) throw new Error("Time já cadastrado com esse nome.");
 
-  // created_by e members já vêm no formato do controller:
-  // created_by: { uid, user_type }
-  // members: [{ uid, user_type }]
   const novoTime = await teams.create({
     nome,
     description,
     logo_url: logo_url || "",
-    created_by,        // objeto com uid (compatível com filtros "created_by.uid")
+    created_by,        
     monthly_fee,
     members: Array.isArray(members) && members.length ? members : [created_by]
   });
@@ -135,15 +132,15 @@ async function criarTime(dados) {
   return novoTime;
 }
 
-// Lista membros de um time com join por Users
+
 async function listarMembrosTime(teamId) {
   const team = await teams.findById(teamId);
   if (!team) throw new Error("Time não encontrado");
 
-  // Extrai UIDs do array heterogêneo em team.members
+
   const memberUids = toUidArray(team.members);
 
-  // Busca usuários pelo firebaseUid
+  
   const users = await user.find(
     { firebaseUid: { $in: memberUids } },
     "nome firebaseUid"
@@ -151,7 +148,7 @@ async function listarMembrosTime(teamId) {
 
   const members = memberUids.map(uid => {
     const userData = users.find(u => u.firebaseUid === uid);
-    // recuperar o user_type original se existir na lista do time
+    
     let originalUserType = null;
     for (const m of team.members) {
       const val = typeof m === "object" ? (m.uid || m.firebaseUid || m._id || m.id) : m;
@@ -170,7 +167,7 @@ async function listarMembrosTime(teamId) {
   return members;
 }
 
-// Atualização por ID
+
 async function atualizarTime(id, NovosDados) {
   const team = await teams.findByIdAndUpdate(id, NovosDados, {
     new: true,
@@ -180,7 +177,7 @@ async function atualizarTime(id, NovosDados) {
   return team;
 }
 
-// Deleção por ID
+
 async function deletarTime(id) {
   const team = await teams.findByIdAndDelete(id);
   if (!team) throw new Error("time não encontrado.");

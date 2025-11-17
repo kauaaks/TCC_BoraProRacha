@@ -9,8 +9,8 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "jogador", "gestor_campo", "representante_time"], 
     required: true 
   },
-  firebaseUid: { type: String, required: true, unique: true }, // ID do Firebase
+  firebaseUid: { type: String, required: true, unique: true }, 
 }, { timestamps: true });
 
-/* "mongoose.models.Usuários" verifica se o modelo já foi registrado. */
+
 module.exports = mongoose.models.Usuários || mongoose.model("Usuários", userSchema);

@@ -33,6 +33,9 @@ export default function Layout({ children }) {
   const location = useLocation()
   const navigate = useNavigate()
 
+ 
+  const nomeVisivel = (user?.nome || user?.displayName || user?.name || '').trim()
+
   const getNavigationItems = () => {
     if (!user) return []
 
@@ -47,11 +50,10 @@ export default function Layout({ children }) {
     ]
 
     if (userType === 'admin') {
+      
       return [
         ...common,
-        { name: 'Times', href: '/teams', icon: Users },
         { name: 'Campos', href: '/fields', icon: MapPin },
-        { name: 'Financeiro', href: '/payments', icon: CreditCard },
         { name: 'Administração', href: '/admin', icon: Shield }
       ]
     }
@@ -65,15 +67,16 @@ export default function Layout({ children }) {
 
     if (userType === 'representante_time') {
       return [
-    ...common,
-    { name: 'Meu Time', href: '/my-team', icon: Users }
-  ]
-}
-
-
+      ...common,
+      { name: 'Meus Times', href: '/my-team', icon: Users }
+    ]
+    }
 
     if (userType === 'jogador') {
-      return common
+      return [
+        ...common,
+      { name: 'Meus Times', href: '/my-team', icon: Users }
+    ]
     }
 
     return common
@@ -119,11 +122,13 @@ export default function Layout({ children }) {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">Bora Pro Racha</h1>
-          <p className="text-xs text-gray-500">{user?.displayName} {user?.user_type && `• ${getUserTypeLabel(user.user_type)}`}</p>
+          <p className="text-xs text-gray-500">
+            {nomeVisivel || 'Usuário'} {user?.user_type && `• ${getUserTypeLabel(user.user_type)}`}
+          </p>
         </div>
       </div>
 
-      {/* Navegação */}
+      
       <nav className="flex-1 p-4 space-y-2">
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.href
@@ -145,18 +150,18 @@ export default function Layout({ children }) {
         })}
       </nav>
 
-      {/* Perfil do usuário */}
+      
       <div className="p-4 border-t">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="w-full justify-start h-12 p-2">
               <Avatar className="w-8 h-8 mr-3">
                 <AvatarFallback className="bg-appsociety-green text-white text-sm">
-                  {getUserInitials(user?.name)}
+                  {getUserInitials(nomeVisivel)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 text-left">
-                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-sm font-medium">{nomeVisivel || 'Usuário'}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
             </Button>
@@ -181,14 +186,14 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar Desktop */}
+      
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200 shadow-sm">
           <SidebarContent />
         </div>
       </div>
 
-      {/* Mobile Header */}
+      
       <div className="lg:hidden">
         <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
           <div className="flex items-center space-x-3">
@@ -218,7 +223,7 @@ export default function Layout({ children }) {
               <Button variant="ghost" size="sm">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className="bg-appsociety-green text-white text-sm">
-                    {getUserInitials(user?.name)}
+                    {getUserInitials(nomeVisivel)}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -226,7 +231,7 @@ export default function Layout({ children }) {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div>
-                  <p className="font-medium">{user?.name}</p>
+                  <p className="font-medium">{nomeVisivel || 'Usuário'}</p>
                   <p className="text-xs text-gray-500">{user?.email}</p>
                 </div>
               </DropdownMenuLabel>
@@ -245,7 +250,7 @@ export default function Layout({ children }) {
         </div>
       </div>
 
-      {/* Conteúdo Principal */}
+      
       <div className="lg:pl-72">
         <main className="flex-1">
           <div className="p-4 lg:p-8">

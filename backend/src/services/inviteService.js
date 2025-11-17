@@ -1,21 +1,50 @@
 const crypto = require("crypto");
 const QRCode = require("qrcode");
 const Invite = require("../models/invite");
+const mongoose = require("mongoose");
 
-// Gera token, cria invite no Mongo e retorna link + QR code
+
 async function gerarTokenConvite(timeId) {
-  const token = crypto.randomBytes(12).toString("hex");
+  
+  if (!timeId) throw new Error("timeId é obrigatório");
+  if (!mongoose.Types.ObjectId.isValid(timeId)) throw new Error("timeId inválido");
 
-  const invite = await Invite.create({
-    token,
+  const agora = new Date();
+  let inviteExistente = await Invite.findOne({
     timeId,
-    expiraEm: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h de validade
+    usado: false,
+    $or: [
+      { expiraEm: { $exists: false } },
+      { expiraEm: { $gt: agora } }
+    ]
   });
 
-  const url = `http://localhost:5173/convite/${token}`;
+  if (!inviteExistente) {
+    let token;
+    for (;;) {
+      token = crypto.randomBytes(12).toString("hex");
+      const jaExiste = await Invite.exists({ token });
+      if (!jaExiste) break;
+    }
+
+    inviteExistente = await Invite.create({
+      token,
+      timeId,
+      expiraEm: new Date(Date.now() + 24 * 60 * 60 * 1000) 
+    });
+  }
+
+ 
+  const origin = process.env.APP_ORIGIN || "http://localhost:5173";
+  const url = `${origin}/convite/${inviteExistente.token}`;
   const qrCode = await QRCode.toDataURL(url);
 
-  return { token, url, qrCode };
+  return {
+    token: inviteExistente.token,
+    url,
+    qrCode,
+    expiraEm: inviteExistente.expiraEm
+  };
 }
 
 module.exports = { gerarTokenConvite };

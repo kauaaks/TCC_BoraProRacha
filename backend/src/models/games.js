@@ -5,7 +5,7 @@ const gamesSchema = new mongoose.Schema({
     field_id: {type: mongoose.Schema.Types.ObjectId, ref: "Campos", required: true},
     scheduled_date: {type: Date, required: true},
     status: {type: String, required: true},
-    duration: {type: String, required: true}, // duração precisa ter formato "HH:MM:SS"
+    duration: {type: String, required: true}, 
 }, {timestamps: true});
 
 module.exports = mongoose.models.Jogos || mongoose.model("Jogos", gamesSchema);

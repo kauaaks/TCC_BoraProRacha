@@ -1,12 +1,10 @@
-// src/components/dashboards/AdminDashboard.jsx
-// ... (resto dos dashboards mantido como está acima)
-// src/pages/Dashboard.jsx
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import AdminDashboard from '@/components/dashboards/AdminDashboard'
 import FieldManagerDashboard from '@/components/dashboards/FieldManagerDashboard'
 import TeamRepDashboard from '@/components/dashboards/TeamRepDashboard'
 import PlayerDashboard from '@/components/dashboards/PlayerDashboard'
+
 
 export default function Dashboard() {
   const { user, apiCall } = useAuth()
@@ -18,14 +16,17 @@ export default function Dashboard() {
   // outras propriedades customizadas
 })
 
+
   const [data, setData] = useState({ teams: [], games: [], payments: [] })
   const [loading, setLoading] = useState(true)
+
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
       try {
         const promises = []
+
 
         if (user?.user_type === 'admin') {
           promises.push(
@@ -49,7 +50,9 @@ export default function Dashboard() {
           promises.push(apiCall('/games'))
         }
 
+
         const results = await Promise.allSettled(promises)
+
 
         const [a, b, c] = results.map(r => (r.status === 'fulfilled' ? r.value : []))
         setData({
@@ -65,15 +68,19 @@ export default function Dashboard() {
       }
     }
 
+
     if (user) fetchData()
   }, [user])
 
+
   if (loading) return <div className="p-6">Carregando...</div>
+
 
   if (user?.user_type === 'admin') return <AdminDashboard data={data} />
   if (user?.user_type === 'gestor_campo') return <FieldManagerDashboard data={data} />
   if (user?.user_type === 'representante_time') return <TeamRepDashboard data={data} />
   if (user?.user_type === 'jogador') return <PlayerDashboard data={data} />
+
 
   return <div className="p-6">Perfil de usuário desconhecido.</div>
 }

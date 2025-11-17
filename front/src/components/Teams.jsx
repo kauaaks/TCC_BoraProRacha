@@ -12,10 +12,10 @@ import { Users, Plus, Search, DollarSign, Calendar } from "lucide-react";
 
 export default function Teams() {
   const { user, apiCall } = useAuth();
-  const uid = user?.uid ? String(user.uid) : null;
+  const uid = user?.firebaseUid || user?.uid ? String(user.firebaseUid || user.uid) : null;
 
   const [teams, setTeams] = useState([]);
-  const [myTeams, setMyTeams] = useState([]); // /teams/meustimes
+  const [myTeams, setMyTeams] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -66,7 +66,7 @@ export default function Teams() {
     return () => clearTimeout(t);
   }, [searchTerm, uid]);
 
-  // Normalização robusta: garante members como array e member_count sempre numérico
+ 
   const normalize = (t) => {
     const id = t._id || t.id || "";
     const createdBy = t.created_by || t.createdBy || t.owner_id || "";
@@ -93,7 +93,7 @@ export default function Teams() {
       created_at: t.created_at || t.createdAt || Date.now(),
       created_by: createdBy ? String(createdBy) : "",
       representatives,
-      members: toUidArray(membersSafe) // nunca undefined
+      members: toUidArray(membersSafe)
     };
   };
 
@@ -148,6 +148,9 @@ export default function Teams() {
     user?.user_type === "admin" ||
     user?.user_type === "representante_time" ||
     user?.user_type === "gestor_campo";
+
+ 
+  const canSchedule = () => user?.user_type === "representante_time";
 
   if (loading) {
     return (
@@ -327,9 +330,16 @@ export default function Teams() {
                 </div>
 
                 <div className="pt-2">
-                  <Button variant="default" size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                    Agendar jogo
-                  </Button>
+                  {user?.user_type === "representante_time" && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      onClick={() => {}}
+                    >
+                      Agendar jogo
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

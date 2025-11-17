@@ -54,7 +54,6 @@ async function meusTimes(req, res) {
   try {
     const uid = req.user.uid;
     const teams = await teamsService.timeUid(uid);
-    // contrato: sempre 200 com array (pode ser vazio)
     return res.json({ teams });
   } catch (err) {
     console.error("[/teams/me|/meustimes] erro:", err);

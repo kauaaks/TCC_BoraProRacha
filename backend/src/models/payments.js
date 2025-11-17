@@ -1,13 +1,19 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const paymentsSchema = new mongoose.Schema({
-    user_id: {type: mongoose.Schema.Types.ObjectId, ref: "Usuários", required: true},
-    team_id: {type: mongoose.Schema.Types.ObjectId, ref: "Times", required: true},
-    amount: {type: Number, required: true},
-    due_date: {type: Date, required: true},
-    payment_date: {type: Date, default: Date.now},
-    status: {type: String, enum: ["pending", "completed", "failed"], default: "pending"},
-    payment_method: {type: String, enum: ["credit_card", "debit_card", "pix", "boleto"], required: true},
-}, {timestamps: true});
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true },
+  team_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Teams', required: true },
+  month: { type: String, required: true }, 
+  amount: { type: Number, default: 0 },
+  due_date: { type: Date },
+  status: { type: String, enum: ['pending','awaiting_approval','paid','unpaid'], default: 'pending' },
+  receipt_url: { type: String, default: null },
+  paid_at: { type: Date, default: null },
+  confirmed_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', default: null },
+  payment_method: { type: String, default: null },
+}, { timestamps: true });
 
-module.exports = mongoose.models.Pagamentos || mongoose.model("Pagamentos", paymentsSchema);
+
+paymentsSchema.index({ team_id: 1, user_id: 1, month: 1 }, { unique: true });
+
+module.exports = mongoose.model('Pagamentos', paymentsSchema);

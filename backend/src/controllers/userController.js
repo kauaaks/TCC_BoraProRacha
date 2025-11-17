@@ -1,6 +1,6 @@
 const userService = require("../services/userService");
 
-// Buscar usuário pelo Firebase UID
+
 async function buscarUsuarioPorFirebaseUid(req, res) {
   const { uid } = req.params;
   console.log("[Controller] Buscar usuário por Firebase UID:", uid);
@@ -20,8 +20,8 @@ async function buscarUsuarioPorFirebaseUid(req, res) {
         firebaseUid: firebaseUser.uid,
         nome: firebaseUser.displayName || "Sem nome",
         email: firebaseUser.email,
-        telefone: "00000000000", // padrão
-        user_type: "jogador", // padrão
+        telefone: "00000000000", 
+        user_type: "jogador", 
         ativo: true,
       });
 
@@ -37,7 +37,7 @@ async function buscarUsuarioPorFirebaseUid(req, res) {
   }
 }
 
-// Criar usuário via POST
+
 async function criarUsuario(req, res) {
   const { firebaseUid, nome, telefone, user_type } = req.body;
   console.log("[Controller] Criar usuário, body recebido:", req.body);
@@ -60,7 +60,7 @@ async function criarUsuario(req, res) {
   } catch (err) {
     console.error("[Controller] Erro ao criar usuário:", err);
 
-    // Tenta recuperar usuário existente no Mongo caso já exista
+    
     if (err.message.includes("already exists") || err.message.includes("Email já cadastrado")) {
       try {
         const existingUser = await userService.buscarUsuarioPorFirebaseUid(firebaseUid);
@@ -76,7 +76,7 @@ async function criarUsuario(req, res) {
   }
 }
 
-// Listar todos os usuários
+
 async function listarUsuarios(req, res) {
   try {
     const users = await userService.listarUsuarios();
@@ -87,7 +87,7 @@ async function listarUsuarios(req, res) {
   }
 }
 
-// Atualizar usuário
+
 async function atualizarUsuarioMe(req, res) {
   try {
     if (!req.user || !req.user.uid) {
@@ -100,7 +100,7 @@ async function atualizarUsuarioMe(req, res) {
   }
 }
 
-// Deletar usuário
+
 async function deletarUsuario(req, res) {
   try {
     const result = await userService.deletarUsuario(req.params.id);
@@ -111,7 +111,7 @@ async function deletarUsuario(req, res) {
   }
 }
 
-// Estatísticas do usuário
+
 async function getUserStats(req, res) {
   try {
     const stats = await userService.getUserStats(req.params.id);
@@ -122,7 +122,7 @@ async function getUserStats(req, res) {
   }
 }
 
-// Exporta todas as funções
+
 module.exports = {
   buscarUsuarioPorFirebaseUid,
   criarUsuario,

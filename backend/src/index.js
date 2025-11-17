@@ -1,27 +1,34 @@
-// 1️⃣ Carrega variáveis de ambiente
+
 require('dotenv').config();
 
-// 2️⃣ Importa dependências
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const morgan = require('morgan'); // logs de requisições
-const helmet = require('helmet'); // segurança básica headers
+const morgan = require('morgan'); 
+const helmet = require('helmet');
+const path = require('path');
 
 const app = express();
 
-//  Middlewares gerais
+
+const FRONT = process.env.FRONT_ORIGIN || 'http://localhost:5173';
+
+
 app.use(helmet());
+
+
 app.use(cors({
-  origin: 'http://localhost:5173', // porta do frontend
+  origin: FRONT,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
   credentials: true
 }));
-app.use(express.json());
-app.use(morgan('dev')); // logs de requisições
 
-// 4 Rotas de healthcheck
+app.use(express.json());
+app.use(morgan('dev')); 
+
+
 app.get('/health', async (req, res) => {
   let dbStatus;
   if (mongoose.connection.readyState === 1) {
@@ -37,39 +44,54 @@ app.get('/health', async (req, res) => {
   res.json({ statusDB: dbStatus });
 });
 
-//  Importa rotas
+
 const userRoute = require('./routes/userRoute.js');
 const teamsRoute = require('./routes/teamsRoute.js');
 const gameStatsRoute = require("./routes/game_statsRoute.js");
 const gamesRoute = require ("./routes/gamesRoute.js");
-const paymentRoute = require ("./routes/paymentsRoute.js")
+const paymentRoute = require ("./routes/paymentsRoute.js");
+const inviteRoutes = require ("./routes/inviteRoutes.js");
 
-// 6 Usa rotas
-app.use('/users', userRoute);          // ex: /users, /users/uid/:uid
-app.use('/teams', teamsRoute);         // ex: /teams
-app.use('/gamestats', gameStatsRoute); // ex: /api/game-stats
+
+app.use('/users', userRoute);
+app.use('/teams', teamsRoute);
+app.use('/gamestats', gameStatsRoute);
 app.use('/games', gamesRoute);
 app.use('/payments', paymentRoute);
+console.log("[index] before mount /invite");
+app.use('/invite', inviteRoutes);
+console.log("[index] after mount /invite");
 
-// 7 Rota raiz
+
+app.use('/uploads', (req, res, next) => {
+  
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  
+  res.setHeader('Access-Control-Allow-Origin', FRONT);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
+
+
 app.get('/', (req, res) => {
   res.send('Servidor rodando!');
 });
 
-// 8 Conexão com MongoDB
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log('✅ MongoDB conectado com sucesso!');
+    console.log(' MongoDB conectado com sucesso!');
     
-    // 9 Inicializa servidor
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
-      console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+      console.log(` Servidor rodando em http://localhost:${PORT}`);
+      console.log(` Uploads servidos em http://localhost:${PORT}/uploads`);
+      console.log(` Front permitido: ${FRONT}`);
     });
   })
   .catch(err => console.error('❌ Erro ao conectar no MongoDB:', err));
 
-// Tratamento global de erros
+
 app.use((err, req, res, next) => {
   console.error('Erro global:', err);
   res.status(err.status || 500).json({ error: err.message || 'Erro interno do servidor' });
