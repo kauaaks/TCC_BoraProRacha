@@ -115,7 +115,7 @@ export default function Layout({ children }) {
 
   const SidebarContent = ({ isMobile = false }) => (
     <div className="flex flex-col h-full">
-      {/* Logo */}
+      
       <div className="flex items-center space-x-3 p-6 border-b">
         <div className="w-10 h-10 bg-gradient-to-br from-appsociety-green to-appsociety-blue rounded-lg flex items-center justify-center">
           <Users className="w-6 h-6 text-white" />
