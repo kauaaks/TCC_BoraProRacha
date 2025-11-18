@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Upload, Eye, CheckCircle2, XCircle, Users } from 'lucide-react'
+import { Upload, Eye, CheckCircle2, XCircle, Users, Bell, Trash } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
@@ -40,14 +40,13 @@ const getCurrentMonth = () => {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   return `${d.getFullYear()}-${m}`
 }
-const isYYYYMM = (s) => /^\d{4}-\d{2}$/.test(String(s || '').trim()) // valida formato antes do fetch [web:177]
+const isYYYYMM = (s) => /^\d{4}-\d{2}$/.test(String(s || '').trim())
 
-// Helpers de mês
 const toYearMonth = (d) => {
   const dt = new Date(d || Date.now())
   return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`
 }
-const cmpYM = (a, b) => a.localeCompare(b) // YYYY-MM é lexicográfico
+const cmpYM = (a, b) => a.localeCompare(b)
 const clampYM = (ym, minYM, maxYM) => {
   if (!isYYYYMM(ym)) return minYM
   if (minYM && cmpYM(ym, minYM) < 0) return minYM
@@ -58,49 +57,93 @@ const clampYM = (ym, minYM, maxYM) => {
 export default function Financeiro() {
   const { user, apiCall } = useAuth()
   const role = user?.user_type
+  const isAdmin = role === 'admin'
   const isRep = role === 'representante_time'
   const isJog = role === 'jogador'
 
+  // ADMIN STATES
+  const [adminTeams, setAdminTeams] = useState([])
+  const [selectedAdminTeam, setSelectedAdminTeam] = useState(null)
+  const [adminMembers, setAdminMembers] = useState([])
+  const [adminLoading, setAdminLoading] = useState(true)
+  const [adminDetailsOpen, setAdminDetailsOpen] = useState(false)
+
+  // REPRESENTANTE/JOGADOR STATES
   const [teams, setTeams] = useState([])
   const [teamId, setTeamId] = useState('')
-
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [month, setMonth] = useState(getCurrentMonth())
-
-  // faixa válida por time
   const [range, setRange] = useState({ firstMonth: null, lastMonth: getCurrentMonth() })
-
   const [files, setFiles] = useState({})
   const [uploading, setUploading] = useState({})
   const [previewMap, setPreviewMap] = useState({})
-
   const [members, setMembers] = useState([])
   const [membersLoading, setMembersLoading] = useState(false)
   const [openMonth, setOpenMonth] = useState('')
-
   const [preview, setPreview] = useState({ open:false, src:'', title:'' })
   const [searchMember, setSearchMember] = useState('')
 
+  // ADMIN LOGIC
+  useEffect(() => {
+    if (!isAdmin) return
+    async function fetchTeams() {
+      setAdminLoading(true)
+      try {
+        const res = await apiCall('/admin/teams/finance')
+        setAdminTeams(res.teams || [])
+      } catch {
+        setAdminTeams([])
+      } finally {
+        setAdminLoading(false)
+      }
+    }
+    fetchTeams()
+  }, [isAdmin, apiCall])
+
+  async function openAdminDetails(team) {
+    setSelectedAdminTeam(team)
+    setAdminDetailsOpen(true)
+    try {
+      const res = await apiCall(`/admin/teams/${team.id}/finance`)
+      setAdminMembers(res.members || [])
+    } catch {
+      setAdminMembers([])
+    }
+  }
+
+  async function emitirAviso(teamId) {
+    await apiCall(`/admin/teams/${teamId}/notify`, { method: 'POST' })
+    alert('Aviso emitido para este time.')
+  }
+
+  async function deletarTime(teamId) {
+    if (!window.confirm('Tem certeza que deseja deletar este time?')) return
+    await apiCall(`/admin/teams/${teamId}`, { method: 'DELETE' })
+    setAdminTeams(ts => ts.filter(t => t.id !== teamId))
+    alert('Time deletado!')
+    setAdminDetailsOpen(false)
+  }
+
+  // COMMON LOGIC (rep + jog)
   const normalizeTeams = (raw) => {
     if (!raw) return []
     if (Array.isArray(raw)) return raw
     if (Array.isArray(raw.teams)) return raw.teams
     return []
   }
-
   const isTeamOfRepresentative = (team, currentUid) => {
     if (!currentUid) return false
     if (String(team?.created_by?.uid || '') === String(currentUid) &&
-        team?.created_by?.user_type === 'representante_time') return true
+      team?.created_by?.user_type === 'representante_time') return true
     if (Array.isArray(team?.members) &&
-        team.members.some(m => String(m?.uid || '') === String(currentUid) &&
-                               m?.user_type === 'representante_time')) return true
+      team.members.some(m => String(m?.uid || '') === String(currentUid) &&
+        m?.user_type === 'representante_time')) return true
     return false
   }
 
-  // Carrega times do usuário
   useEffect(() => {
+    if (!isRep && !isJog) return
     ;(async () => {
       try {
         const res = await apiCall('/teams/meustimes').catch(() => ([]))
@@ -114,23 +157,19 @@ export default function Financeiro() {
         setTeams([])
       }
     })()
-  }, [isRep, user?.uid, apiCall]) // dependências corretas [web:145]
+  }, [isRep, isJog, user?.uid, apiCall])
 
-  // Busca faixa de meses válida para o time selecionado
   const fetchMonthRange = async (id) => {
     if (!id) { setRange({ firstMonth: null, lastMonth: getCurrentMonth() }); return }
     try {
-      // Se tiver API dedicada (recomendado): /teams/:id/month-range
       const r = await apiCall(`/teams/${id}/month-range`).catch(() => null)
       if (r && r.firstMonth && r.lastMonth) {
         setRange({ firstMonth: r.firstMonth, lastMonth: r.lastMonth })
-        // clamp do month selecionado
         const clamped = clampYM(month, r.firstMonth, r.lastMonth)
         if (clamped !== month) setMonth(clamped)
         return
       }
     } catch { /* fallback */ }
-    // Fallback: se não houver rota, tenta inferir pelo próprio array teams (se tiver created_at)
     const t = (teams || []).find(tt => String(tt.id||tt._id) === String(id))
     const first = t?.created_at ? toYearMonth(t.created_at) : getCurrentMonth()
     const last = getCurrentMonth()
@@ -139,17 +178,15 @@ export default function Financeiro() {
     if (clamped !== month) setMonth(clamped)
   }
 
-  // Atualiza range quando trocar de time
   useEffect(() => {
+    if (!isRep && !isJog) return
     fetchMonthRange(teamId)
-  }, [teamId]) // manter simples; apiCall já está no escopo
+  }, [teamId, isRep, isJog])
 
-  // Função reutilizável para carregar ciclos
   const loadCycles = async (signal) => {
     setLoading(true)
     try {
       if (!teamId || !month) { setPayments([]); return }
-      // valida YYYY-MM e clamp antes de consultar
       if (!isYYYYMM(month)) {
         const fix = clampYM(getCurrentMonth(), range.firstMonth || getCurrentMonth(), range.lastMonth || getCurrentMonth())
         setMonth(fix)
@@ -183,23 +220,21 @@ export default function Financeiro() {
     } finally {
       if (!signal?.aborted) setLoading(false)
     }
-  } // centraliza recarga [web:158]
+  }
 
-  // Recarrega ao trocar time/mês, com cancelamento
   useEffect(() => {
+    if (!isRep && !isJog) return
     setPayments([])
     setLoading(true)
     const controller = new AbortController()
     loadCycles(controller.signal)
-    return () => controller.abort() // cancela requisição anterior [web:150][web:153]
-  }, [teamId, month, apiCall, range.firstMonth, range.lastMonth]) // range influencia clamp [web:145]
+    return () => controller.abort()
+  }, [teamId, month, apiCall, range.firstMonth, range.lastMonth, isRep, isJog])
 
-  // validação + preview local
-  const isValidImage = (file) => file && /^image\/(png|jpe?g|webp)$/i.test(file.type) // [web:119]
+  const isValidImage = (file) => file && /^image\/(png|jpe?g|webp)$/i.test(file.type)
   const isSmallEnough = (file, maxMB = 8) => file && file.size <= maxMB * 1024 * 1024
-
   const onFileChange = (paymentId, file) => {
-    if (previewMap[paymentId]) URL.revokeObjectURL(previewMap[paymentId]) // cleanup [web:113]
+    if (previewMap[paymentId]) URL.revokeObjectURL(previewMap[paymentId])
     if (!file) {
       setFiles(prev => ({ ...prev, [paymentId]: null }))
       setPreviewMap(prev => ({ ...prev, [paymentId]: '' }))
@@ -217,14 +252,11 @@ export default function Financeiro() {
     if (!file) return alert('Selecione uma imagem de comprovante')
     try {
       setUploading(prev => ({ ...prev, [payment.id]: true }))
-
       const form = new FormData()
       form.append('file', file)
       form.append('month', payment.month)
       if (teamId) form.append('teamId', teamId)
       if (user?.uid) form.append('userId', user.uid)
-
-      // não definir Content-Type com FormData [web:99][web:97]
       await apiCall('/payments/receipt/upload', { method: 'POST', body: form })
       await loadCycles()
       onFileChange(payment.id, null)
@@ -245,7 +277,6 @@ export default function Financeiro() {
         user_id: user?.uid || null,
         month: payment.month
       }
-      // se o backend não aceitar body em DELETE, converta para POST /payments/receipt/remove [web:134]
       await apiCall('/payments/receipt', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -324,13 +355,69 @@ export default function Financeiro() {
   }, [members, searchMember])
 
   useEffect(() => {
-    // cleanup de blobs ao desmontar
     return () => {
       Object.values(previewMap).forEach(u => { if (u) URL.revokeObjectURL(u) })
     }
-  }, []) // liberar URLs ao desmontar [web:113]
+  }, [])
 
-  // UI
+  // --- ADMIN PAINEL ---
+  if (isAdmin) {
+    return (
+      <div className="space-y-8">
+        <h1 className="text-3xl font-bold text-gray-900">Financeiro Administrativo</h1>
+        {adminLoading ? (
+          <div>Carregando times...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {adminTeams.map(team => (
+              <div key={team.id} className="p-6 bg-white rounded shadow flex flex-col gap-3 border">
+                <div className="font-bold text-lg flex items-center gap-2">
+                  <Users className="w-5 h-5" /> {team.nome}
+                </div>
+                <div className="mt-1 text-sm">
+                  Membros: <b>{team.totalMembros}</b>
+                </div>
+                <div>
+                  Pagos: <span className="text-green-700">{team.pagos}</span> &nbsp;|&nbsp; 
+                  Pendentes: <span className="text-red-700">{team.pendentes}</span>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Button onClick={() => openAdminDetails(team)}><Eye className="w-4 h-4 mr-1" />Detalhes</Button>
+                  <Button variant="outline" onClick={() => emitirAviso(team.id)}><Bell className="w-4 h-4 mr-1" />Aviso</Button>
+                  <Button variant="destructive" onClick={() => deletarTime(team.id)}><Trash className="w-4 h-4 mr-1" />Deletar</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Modal Detalhes dos membros do time */}
+        <Dialog open={adminDetailsOpen} onOpenChange={setAdminDetailsOpen}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Detalhes do Time</DialogTitle>
+            </DialogHeader>
+            {selectedAdminTeam && (
+              <div className="mb-3 text-lg font-bold">{selectedAdminTeam.nome}</div>
+            )}
+            <div className="space-y-2 mt-2">
+              {adminMembers.map(m => (
+                <div key={m.user_id} className="flex justify-between items-center border-b py-2">
+                  <span>{m.nome}</span>
+                  <span className={m.status === 'paid' ? 'text-green-700' : 'text-red-700'}>
+                    {m.status === 'paid' ? 'Pago' : 'Não pago'}
+                  </span>
+                </div>
+              ))}
+              {adminMembers.length === 0 && <div className="text-gray-500">Nenhum membro encontrado.</div>}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    )
+  }
+
+  // --- REPRESENTANTE & JOGADOR ---
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-bold text-gray-900">Financeiro</h1>
@@ -383,14 +470,12 @@ export default function Financeiro() {
             value={month}
             onChange={(e) => {
               const raw = e.target.value
-              // não dispare fetch até completar YYYY-MM; clamp ao completar
               if (!isYYYYMM(raw)) { setMonth(raw); return }
               const clamped = clampYM(raw, range.firstMonth || raw, range.lastMonth || raw)
               setMonth(clamped)
             }}
             placeholder="YYYY-MM"
           />
-          {/* dica visual opcional */}
           {range.firstMonth && (
             <div className="text-[11px] text-gray-500 mt-1">
               Permitido: {range.firstMonth} a {range.lastMonth}
@@ -422,8 +507,6 @@ export default function Financeiro() {
                 <div className="text-gray-700 text-sm">
                   Valor: <span className="font-medium">{fmtBRL(payment.amount)}</span>
                 </div>
-
-                {/* Comprovante: enviar, ver, remover */}
                 <div className="mt-1">
                   <label className="text-sm text-gray-600">Comprovante</label>
                   <div className="flex items-center gap-2 mt-1">
@@ -435,7 +518,6 @@ export default function Financeiro() {
                     <Button size="sm" onClick={() => uploadReceipt(payment)} disabled={uploading[payment.id]}>
                       <Upload className="w-4 h-4 mr-2" /> {uploading[payment.id] ? 'Enviando...' : 'Enviar'}
                     </Button>
-
                     {payment.receipt_url && (
                       <Button
                         size="sm"
@@ -445,7 +527,6 @@ export default function Financeiro() {
                         <Eye className="w-4 h-4 mr-2" /> Ver
                       </Button>
                     )}
-
                     {payment.receipt_url && (
                       <Button
                         size="sm"
@@ -456,13 +537,11 @@ export default function Financeiro() {
                       </Button>
                     )}
                   </div>
-
                   {previewMap[payment.id] && (
                     <div className="mt-2">
                       <img src={previewMap[payment.id]} alt="Prévia do comprovante" className="h-32 rounded border" />
                     </div>
                   )}
-
                   {isPago && payment.paidOnBR && (
                     <div className="text-green-700 text-base font-semibold mt-2">
                       Você está em dia! <span className="text-xs text-gray-600">(pago em {payment.paidOnBR})</span>

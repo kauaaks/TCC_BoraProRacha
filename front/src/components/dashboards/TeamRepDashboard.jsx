@@ -214,20 +214,19 @@ export default function TeamRepDashboard({ data, teamId }) {
                 <div className="space-y-3">
                   <div>
                     <label className="text-sm text-gray-600">Nome</label>
-                    <Input value={form.nome} onChange={setF('nome')} placeholder="Ex.: Jujutsukaisen FC" />
+                    <Input value={form.nome} onChange={setF('nome')} placeholder="Ex: Bora Pro Racha FC" />
                   </div>
                   <div>
                     <label className="text-sm text-gray-600">Descrição</label>
-                    <Input value={form.description} onChange={setF('description')} placeholder="Ex.: Time de fut de sexta" />
+                    <Input value={form.description} onChange={setF('description')} placeholder="Ex: Time de Fut7 Amador" />
                   </div>
                   <div>
                     <label className="text-sm text-gray-600">Mensalidade (R$)</label>
-                    <Input type="number" min="0" step="0.01" value={form.monthly_fee} onChange={setF('monthly_fee')} placeholder="Ex.: 50.00" />
+                    <Input type="number" min="0" step="0.01" value={form.monthly_fee} onChange={setF('monthly_fee')} placeholder="Ex: R$50,00" />
                   </div>
                   <div>
                     <label className="text-sm text-gray-600">Primeiro mês (YYYY-MM)</label>
                     <Input value={form.firstMonth} onChange={setF('firstMonth')} placeholder="YYYY-MM" />
-                    <div className="text-[11px] text-gray-500 mt-1">Use o formato YYYY-MM, ex.: 2025-11</div>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2">

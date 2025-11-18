@@ -170,7 +170,7 @@ export default function Login() {
               <TabsContent value="register" className="space-y-4 mt-6">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nome Completo</Label>
+                    <Label htmlFor="name">Nome</Label>
                     <Input
                       id="name"
                       type="text"
@@ -196,7 +196,7 @@ export default function Login() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone (opcional)</Label>
+                    <Label htmlFor="phone">Telefone</Label>
                     <Input
                       id="phone"
                       type="tel"
