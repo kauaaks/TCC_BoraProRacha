@@ -16,16 +16,32 @@ export default function Dashboard() {
 
   const [data, setData] = useState({ teams: [], games: [], payments: [] })
   const [loading, setLoading] = useState(true)
-  const [hasTeam, setHasTeam] = useState(true) // assume que tem time até checar
+  const [loadingTeams, setLoadingTeams] = useState(true)
+  const [hasTeam, setHasTeam] = useState(false)
 
   // Checar times do jogador para mostrar banner se não tiver nenhum
   useEffect(() => {
-    if (user && user.user_type === 'jogador') {
-      apiCall('/teams/meustimes')
-        .then(r => setHasTeam(Array.isArray(r) && r.length > 0))
-        .catch(() => setHasTeam(false))
+    let alive = true
+    async function checkTeams() {
+      if (!user || user.user_type !== 'jogador') {
+        if (alive) { setHasTeam(false); setLoadingTeams(false) }
+        return
+      }
+      try {
+        // tenta /meustimes e faz fallback para /me
+        const res = await apiCall('/teams/meustimes?t=' + Date.now())
+          .catch(() => apiCall('/teams/me?t=' + Date.now()))
+        const list = Array.isArray(res?.teams) ? res.teams : Array.isArray(res) ? res : []
+        if (alive) setHasTeam(list.length > 0)
+      } catch {
+        if (alive) setHasTeam(false)
+      } finally {
+        if (alive) setLoadingTeams(false)
+      }
     }
-  }, [user])
+    checkTeams()
+    return () => { alive = false }
+  }, [user?.uid, user?.user_type, apiCall]) // padrão para buscar dados com useEffect [web:315][web:314]
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,8 +71,7 @@ export default function Dashboard() {
           promises.push(apiCall('/games'))
         }
 
-        const results = await Promise.allSettled(promises)
-
+        const results = await Promise.allSettled(promises) // tolerante a falhas [web:331]
         const [a, b, c] = results.map(r => (r.status === 'fulfilled' ? r.value : []))
         setData({
           teams: a?.teams || a?.fields || [],
@@ -70,13 +85,12 @@ export default function Dashboard() {
         setLoading(false)
       }
     }
-
     if (user) fetchData()
-  }, [user])
+  }, [user, apiCall])
 
   if (loading) return <div className="p-6">Carregando...</div>
 
-  if (user?.user_type === 'jogador' && !hasTeam) {
+  if (user?.user_type === 'jogador' && !loadingTeams && !hasTeam) {
     return (
       <div className="p-6">
         <div className="mb-6 bg-yellow-100 border-l-4 border-yellow-400 p-4 rounded shadow">

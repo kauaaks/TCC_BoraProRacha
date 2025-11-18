@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input'
 import { useMemo, useState, useEffect } from 'react'
 
-
 function Qr({ value, size = 220 }) {
   if (!value) return null
   const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}`
@@ -16,13 +15,68 @@ function Qr({ value, size = 220 }) {
 export default function TeamRepDashboard({ data, teamId }) {
   const { user, apiCall } = useAuth()
 
-  
+  // Novo: estados e helpers para criação de time
+  const [createOpen, setCreateOpen] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [form, setForm] = useState({
+    nome: '',
+    description: '',
+    monthly_fee: '',
+    firstMonth: '' // YYYY-MM
+  })
+  const setF = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }))
+  const isYYYYMM = (s) => /^\d{4}-\d{2}$/.test(String(s || '').trim())
+  const ymToDate = (ym) => {
+    const m = String(ym || '').trim()
+    if (!isYYYYMM(m)) return null
+    const [y, mm] = m.split('-').map(Number)
+    return new Date(y, (mm - 1), 1, 0, 0, 0, 0)
+  }
+
+  const criarTime = async () => {
+    const { nome, description, monthly_fee, firstMonth } = form
+    if (!nome || !description || !monthly_fee || !firstMonth) {
+      alert('Preencha nome, descrição, mensalidade e mês inicial (YYYY-MM).')
+      return
+    }
+    const d = ymToDate(firstMonth)
+    if (!d) {
+      alert('Mês inválido. Use YYYY-MM.')
+      return
+    }
+    try {
+      setCreating(true)
+      const body = {
+        nome,
+        description,
+        monthly_fee: Number(monthly_fee),
+        next_payment_date: d.toISOString() // ISO 8601 adequado para o backend [web:239][web:238]
+      }
+      const res = await apiCall('/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      if (!res || res.error) {
+        alert(res?.error || 'Falha ao criar time')
+        return
+      }
+      setCreateOpen(false)
+      setForm({ nome: '', description: '', monthly_fee: '', firstMonth: '' })
+      alert('Time criado com sucesso!')
+      // Se quiser atualizar cards/contagem, revalide dados da página aqui (ex: refetch pai).
+    } catch (e) {
+      alert(e?.message || 'Erro ao criar time')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   const effectiveTeamId = useMemo(
     () => teamId || data?.teams?.[0]?.id || data?.teams?.[0]?._id || null,
     [teamId, data]
   )
 
-  
   const fullName = useMemo(
     () => (user?.nome || user?.displayName || user?.name || '').trim(),
     [user]
@@ -32,7 +86,6 @@ export default function TeamRepDashboard({ data, teamId }) {
     [fullName]
   )
 
-  
   useEffect(() => {
     const needsRefresh = !user?.nome && (user?.displayName || user?.uid)
     if (!needsRefresh) return
@@ -42,7 +95,7 @@ export default function TeamRepDashboard({ data, teamId }) {
         const me = await apiCall('/users/me?t=' + Date.now()).catch(() => null)
       } catch {}
       if (!ignore) {
-        
+        // poderia setar algum estado de perfil, se necessário
       }
     })()
     return () => { ignore = true }
@@ -88,7 +141,6 @@ export default function TeamRepDashboard({ data, teamId }) {
     }
   }
 
-  
   useEffect(() => {
     if (open) gerarConvite()
   }, [open])
@@ -145,17 +197,54 @@ export default function TeamRepDashboard({ data, teamId }) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Plus className="w-6 h-6" />
-              <span className="text-sm">Novo Time</span>
-            </Button>
+            {/* Novo Time - agora com Dialog e POST */}
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="h-20 flex-col space-y-2">
+                  <Plus className="w-6 h-6" />
+                  <span className="text-sm">Novo Time</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Criar novo time</DialogTitle>
+                  <DialogDescription>Informe os dados básicos do seu time</DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm text-gray-600">Nome</label>
+                    <Input value={form.nome} onChange={setF('nome')} placeholder="Ex.: Jujutsukaisen FC" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600">Descrição</label>
+                    <Input value={form.description} onChange={setF('description')} placeholder="Ex.: Time de fut de sexta" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600">Mensalidade (R$)</label>
+                    <Input type="number" min="0" step="0.01" value={form.monthly_fee} onChange={setF('monthly_fee')} placeholder="Ex.: 50.00" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600">Primeiro mês (YYYY-MM)</label>
+                    <Input value={form.firstMonth} onChange={setF('firstMonth')} placeholder="YYYY-MM" />
+                    <div className="text-[11px] text-gray-500 mt-1">Use o formato YYYY-MM, ex.: 2025-11</div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+                    <Button onClick={criarTime} disabled={creating}>
+                      {creating ? 'Criando...' : 'Criar time'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             <Button variant="outline" className="h-20 flex-col space-y-2">
               <Calendar className="w-6 h-6" />
               <span className="text-sm">Agendar Jogo</span>
             </Button>
 
-            
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="h-20 flex-col space-y-2">
@@ -170,7 +259,6 @@ export default function TeamRepDashboard({ data, teamId }) {
                 </DialogHeader>
 
                 <div className="space-y-4">
-                  
                   {inviteUrl ? (
                     <div className="flex flex-col items-center gap-3">
                       <Qr value={inviteUrl} />
@@ -180,7 +268,6 @@ export default function TeamRepDashboard({ data, teamId }) {
                     <div className="text-sm text-gray-600">Gerando convite...</div>
                   )}
 
-                  
                   <div className="flex gap-2">
                     <Input readOnly value={inviteUrl} placeholder="Link de convite" />
                     <Button
@@ -192,7 +279,6 @@ export default function TeamRepDashboard({ data, teamId }) {
                     </Button>
                   </div>
 
-                  
                   <div className="flex gap-2 items-center">
                     <Input readOnly value={inviteToken} placeholder="Código de convite" className="uppercase tracking-widest" />
                     <Button
@@ -205,7 +291,6 @@ export default function TeamRepDashboard({ data, teamId }) {
                     </Button>
                   </div>
 
-                  
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">
                       {inviteExpires ? `Expira em ${inviteExpires}` : 'Convite sem expiração'}

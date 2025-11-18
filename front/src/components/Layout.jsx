@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
@@ -16,7 +16,6 @@ import {
   Home, 
   Users, 
   Calendar, 
-  CreditCard, 
   BarChart3,
   Wallet, 
   Settings, 
@@ -27,16 +26,53 @@ import {
 } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-
 export default function Layout({ children }) {
-  const { user, logout } = useAuth()
+  const { user, logout, apiCall } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [loadingTeams, setLoadingTeams] = useState(true)
+  const [hasTeam, setHasTeam] = useState(false)
+  const [teams, setTeams] = useState([])
   const location = useLocation()
   const navigate = useNavigate()
 
+  // nome visível
+  const nomeVisivel = useMemo(
+    () => (user?.nome || user?.displayName || user?.name || '').trim(),
+    [user]
+  )
 
-  const nomeVisivel = (user?.nome || user?.displayName || user?.name || '').trim()
-
+  // Carrega times do usuário e define hasTeam
+  useEffect(() => {
+    let alive = true
+    async function loadTeams() {
+      if (!user?.uid) {
+        if (alive) {
+          setHasTeam(false)
+          setTeams([])
+          setLoadingTeams(false)
+        }
+        return
+      }
+      try {
+        const res = await apiCall('/teams/meustimes?t=' + Date.now())
+          .catch(() => apiCall('/teams/me?t=' + Date.now()))
+        const list = res?.teams || []
+        if (alive) {
+          setTeams(list)
+          setHasTeam(Array.isArray(list) && list.length > 0)
+        }
+      } catch {
+        if (alive) {
+          setHasTeam(false)
+          setTeams([])
+        }
+      } finally {
+        if (alive) setLoadingTeams(false)
+      }
+    }
+    loadTeams()
+    return () => { alive = false }
+  }, [user?.uid, apiCall]) // padrão useEffect para buscar dados ao montar [web:315][web:314]
 
   const getNavigationItems = () => {
     if (!user) return []
@@ -51,7 +87,6 @@ export default function Layout({ children }) {
       { name: 'Financeiro', href: '/payments', icon: Wallet }
     ]
 
-    // Remover "Times" para jogador e representante_time
     const filteredCommon = common.filter(item => {
       if (item.name === 'Times') {
         return !(userType === 'jogador' || userType === 'representante_time')
@@ -90,21 +125,17 @@ export default function Layout({ children }) {
     return filteredCommon
   }
 
-
   const navigationItems = getNavigationItems()
-
 
   const handleNavigation = (href) => {
     navigate(href)
     setIsMobileMenuOpen(false)
   }
 
-
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
-
 
   const getUserInitials = (name) => {
     return name
@@ -114,7 +145,6 @@ export default function Layout({ children }) {
       .toUpperCase()
       .slice(0, 2) || 'U'
   }
-
 
   const getUserTypeLabel = (userType) => {
     const types = {
@@ -126,10 +156,28 @@ export default function Layout({ children }) {
     return types[userType] || 'Usuário'
   }
 
+  // Banner “sem time” – aparece somente quando não possui time e já terminou de carregar
+  const NoTeamBanner = () => {
+    if (loadingTeams || hasTeam) return null
+    return (
+      <div className="p-4 md:p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <p className="text-yellow-800">
+            Você ainda não faz parte de nenhum time. Solicite o código/link a um representante e clique abaixo para ingressar.
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/join-team')} className="bg-appsociety-green hover:bg-green-600">
+              Entrar em um time
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const SidebarContent = ({ isMobile = false }) => (
     <div className="flex flex-col h-full">
-      
+      {/* header da barra lateral */}
       <div className="flex items-center space-x-3 p-6 border-b">
         <div className="w-10 h-10 bg-gradient-to-br from-appsociety-green to-appsociety-blue rounded-lg flex items-center justify-center">
           <Users className="w-6 h-6 text-white" />
@@ -142,7 +190,7 @@ export default function Layout({ children }) {
         </div>
       </div>
 
-      
+      {/* navegação */}
       <nav className="flex-1 p-4 space-y-2">
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.href
@@ -164,7 +212,7 @@ export default function Layout({ children }) {
         })}
       </nav>
 
-      
+      {/* conta */}
       <div className="p-4 border-t">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -198,17 +246,16 @@ export default function Layout({ children }) {
     </div>
   )
 
-
   return (
     <div className="min-h-screen bg-gray-50">
-      
+      {/* Sidebar desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200 shadow-sm">
           <SidebarContent />
         </div>
       </div>
 
-      
+      {/* Topbar mobile */}
       <div className="lg:hidden">
         <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
           <div className="flex items-center space-x-3">
@@ -265,14 +312,15 @@ export default function Layout({ children }) {
         </div>
       </div>
 
-      
+      {/* Conteúdo */}
       <div className="lg:pl-72">
         <main className="flex-1">
-          <div className="p-4 lg:p-8">
+          <div className="p-4 lg:p-8 space-y-4">
+            <NoTeamBanner />
             {children}
           </div>
         </main>
       </div>
     </div>
   )
-} 
+}

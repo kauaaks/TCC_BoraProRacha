@@ -91,6 +91,16 @@ async function deletarTime(req, res) {
   }
 }
 
+async function monthRange(req, res) {
+  try {
+    const { id } = req.params;
+    const range = await teamsService.monthRange(id);
+    return res.json(range);
+  } catch (err) {
+    return res.status(404).json({ error: err.message });
+  }
+}
+
 module.exports = {
   listarTimes,
   buscarTime,
@@ -99,5 +109,6 @@ module.exports = {
   deletarTime,
   meuTime,
   listarMembrosTime,
-  meusTimes
+  meusTimes,
+  monthRange
 };

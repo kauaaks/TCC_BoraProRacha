@@ -1,12 +1,13 @@
 const mongoose = require("mongoose");
-const { gerarTokenConvite } = require("../services/inviteService");
+const { gerarTokenConvite, entrarNoTime } = require("../services/inviteService");
 const Invite = require("../models/invite");
 const Teams = require("../models/teams");
 
+// Mantém apenas req/res; delega toda a lógica à service
 
 async function gerarConvite(req, res) {
   try {
-    const uid = req.user?.uid; 
+    const uid = req.user?.uid;
     const { timeId } = req.body;
 
     if (!timeId) return res.status(400).json({ error: "timeId é obrigatório" });
@@ -26,8 +27,6 @@ async function gerarConvite(req, res) {
     }
 
     const invite = await gerarTokenConvite(timeId);
-
-    
     return res.json({
       invite: {
         token: invite.token,
@@ -40,48 +39,21 @@ async function gerarConvite(req, res) {
     console.error("[invite/gerar] erro:", e);
     return res.status(400).json({ error: e.message || "Falha ao gerar convite" });
   }
-}
+} // [web:144]
 
-
-async function entrarNoTime(req, res) {
+async function entrarNoTimeController(req, res) {
   try {
     const uid = req.user?.uid;
     const { token } = req.body;
-
-    if (!token) return res.status(400).json({ error: "token é obrigatório" });
-
-    const invite = await Invite.findOne({ token });
-    if (!invite) return res.status(404).json({ error: "Convite inválido" });
-    if (invite.usado) return res.status(400).json({ error: "Convite já utilizado" });
-    if (invite.expiraEm && invite.expiraEm <= new Date()) {
-      return res.status(400).json({ error: "Convite expirado" });
-    }
-
-    const team = await Teams.findById(invite.timeId);
-    if (!team) return res.status(404).json({ error: "Time não encontrado" });
-
-    
-    const already =
-      (Array.isArray(team.members) && team.members.some(m => (m?.uid || m) === uid));
-
-    if (!already) {
-      team.members = Array.isArray(team.members) ? team.members : [];
-      team.members.push({ uid, user_type: "jogador" });
-      await team.save();
-    }
-
-    
-    invite.usado = true;
-    await invite.save();
-
-    return res.json({ ok: true, teamId: String(team._id) });
+    const out = await entrarNoTime(uid, token);
+    return res.json(out);
   } catch (e) {
     console.error("[invite/entrar] erro:", e);
     return res.status(400).json({ error: e.message || "Falha ao entrar no time" });
   }
-}
+} // [web:144]
 
-module.exports = { 
-  gerarConvite, 
-  entrarNoTime 
+module.exports = {
+  gerarConvite,
+  entrarNoTime: entrarNoTimeController
 };

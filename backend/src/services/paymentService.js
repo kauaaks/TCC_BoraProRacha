@@ -9,11 +9,14 @@ function assertMonth(month) {
   if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("month inválido. Use YYYY-MM.")
 }
 const isObjectId = (v) => mongoose.Types.ObjectId.isValid(v)
-
-
 const USERS_UID_FIELD = 'firebaseUid'
 
-
+function toYearMonth(dateLike) {
+  const d = new Date(dateLike || Date.now());
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
 
 async function listarPagamentos() {
   return await payments.find()
@@ -31,7 +34,6 @@ async function criarPagamento(dados) {
     throw new Error("preencha user_id, team_id, amount, due_date e month.")
   assertMonth(month)
 
- 
   const jaExiste = await payments.findOne({ team_id, user_id, month })
   if (jaExiste) throw new Error("pagamento já cadastrado para esse time/usuário neste mês.")
 
@@ -59,15 +61,22 @@ async function deletarPagamento(id) {
   return { message: "pagamento deletado com sucesso."}
 }
 
-
 async function marcarPago({ team_id, user_id, month, rep_id }) {
   assertMonth(month)
+  // upsert: cria pendente se não existir e marca pago
   const updated = await payments.findOneAndUpdate(
     { team_id, user_id, month },
-    { status: 'paid', paid_at: new Date(), confirmed_by: rep_id || null },
-    { new: true, upsert: false }
-  )
-  if (!updated) throw new Error("registro de pagamento do mês não encontrado.")
+    {
+      $set: { status: 'paid', paid_at: new Date(), confirmed_by: rep_id || null },
+      $setOnInsert: {
+        amount: 0,
+        due_date: new Date(`${month}-15T03:00:00.000Z`),
+        receipt_url: null,
+        payment_method: null
+      }
+    },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  ) // [web:44][web:48]
   return updated
 }
 
@@ -75,20 +84,23 @@ async function marcarNaoPago({ team_id, user_id, month, rep_id }) {
   assertMonth(month)
   const updated = await payments.findOneAndUpdate(
     { team_id, user_id, month },
-    { status: 'unpaid', paid_at: null, confirmed_by: rep_id || null },
-    { new: true, upsert: false }
-  )
-  if (!updated) throw new Error("registro de pagamento do mês não encontrado.")
+    {
+      $set: { status: 'unpaid', paid_at: null, confirmed_by: rep_id || null },
+      $setOnInsert: {
+        amount: 0,
+        due_date: new Date(`${month}-15T03:00:00.000Z`),
+        receipt_url: null,
+        payment_method: null
+      }
+    },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  ) // [web:44][web:48]
   return updated
 }
-
 
 async function anexarComprovante({ team_id, user_id, month, receipt_url, ctx }) {
   assertMonth(month)
   if (!receipt_url) throw new Error("receipt_url obrigatório.")
-
-  console.log('[anexarComprovante] IN', { team_id, user_id_in: user_id, month, receipt_url })
-  console.log('[anexarComprovante] ctx', { uid: ctx?.uid, id: ctx?.id, _id: ctx?._id, user_type: ctx?.user_type })
 
   if (!user_id && ctx && (ctx.id || ctx._id || ctx.uid)) {
     user_id = ctx.id || ctx._id || ctx.uid
@@ -109,10 +121,8 @@ async function anexarComprovante({ team_id, user_id, month, receipt_url, ctx }) 
   }
 
   const teamFilter = isObjectId(team_id) ? new mongoose.Types.ObjectId(team_id) : team_id
-  console.log('[anexarComprovante] resolved', { userObjectId: String(userObjectId), teamFilter, month })
 
   let doc = await payments.findOne({ team_id: teamFilter, user_id: userObjectId, month })
-  console.log('[anexarComprovante] found?', !!doc)
 
   if (!doc) {
     doc = await payments.create({
@@ -120,11 +130,10 @@ async function anexarComprovante({ team_id, user_id, month, receipt_url, ctx }) 
       user_id: userObjectId,
       month,
       amount: 0,
-      due_date: new Date(),
+      due_date: new Date(`${month}-15T03:00:00.000Z`),
       status: 'awaiting_approval',
       receipt_url
     })
-    console.log('[anexarComprovante] created', { id: String(doc._id) })
     return doc
   }
 
@@ -133,15 +142,11 @@ async function anexarComprovante({ team_id, user_id, month, receipt_url, ctx }) 
   }
   doc.receipt_url = receipt_url
   await doc.save()
-  console.log('[anexarComprovante] updated', { id: String(doc._id), status: doc.status })
   return doc
 }
 
-
 async function removerComprovante({ team_id, user_id, month, ctx }) {
   assertMonth(month)
-  console.log('[removerComprovante] IN', { team_id, user_id_in: user_id, month })
-  console.log('[removerComprovante] ctx', { uid: ctx?.uid, id: ctx?.id, _id: ctx?._id, user_type: ctx?.user_type })
 
   if (!user_id && ctx && (ctx.id || ctx._id || ctx.uid)) {
     user_id = ctx.id || ctx._id || ctx.uid
@@ -162,10 +167,8 @@ async function removerComprovante({ team_id, user_id, month, ctx }) {
   }
 
   const teamFilter = isObjectId(team_id) ? new mongoose.Types.ObjectId(team_id) : team_id
-  console.log('[removerComprovante] resolved', { userObjectId: String(userObjectId), teamFilter, month })
 
   const doc = await payments.findOne({ team_id: teamFilter, user_id: userObjectId, month })
-  console.log('[removerComprovante] found?', !!doc, doc ? String(doc._id) : null)
   if (!doc) throw new Error('registro de pagamento do mês não encontrado.')
 
   if (ctx && ctx.user_type && ctx.user_type !== 'jogador') {
@@ -175,25 +178,21 @@ async function removerComprovante({ team_id, user_id, month, ctx }) {
   if (doc.receipt_url && doc.receipt_url.startsWith('/uploads/')) {
     try {
       const abs = path.resolve(process.cwd(), '.' + doc.receipt_url)
-      console.log('[removerComprovante] unlink', abs)
       fs.unlink(abs, () => {})
     } catch (e) {
-      console.log('[removerComprovante] unlink error', e?.message)
+      // ignore
     }
   }
 
-  console.log('[removerComprovante] before reset', { receipt_url: doc.receipt_url, status: doc.status })
   doc.receipt_url = null
   doc.paid_at = null
   if (doc.status !== 'paid') {
     doc.status = 'pending'
   }
   await doc.save()
-  console.log('[removerComprovante] after reset', { receipt_url: doc.receipt_url, status: doc.status })
 
   return { ok: true }
 }
-
 
 async function listarPorTimeEMes({ team_id, month }) {
   assertMonth(month)
@@ -239,10 +238,8 @@ async function listarPorTimeEMes({ team_id, month }) {
   return items
 }
 
-
 async function listarDoUsuarioNoMes({ user_id, month }) {
   assertMonth(month)
-  
   let userObjectId = null
   if (isObjectId(user_id)) userObjectId = new mongoose.Types.ObjectId(user_id)
   else if (typeof user_id === 'string' && isObjectId(user_id.toString())) userObjectId = new mongoose.Types.ObjectId(user_id.toString())
@@ -273,12 +270,9 @@ async function listarDoUsuarioNoMesPorTime({ user_id, team_id, month }) {
   return await payments.find({ user_id: userObjectId, team_id: teamFilter, month })
 }
 
-
- 
 async function listarCiclosDoUsuario({ user_id, team_id, month }) {
   assertMonth(month)
 
-  
   let userObjectId = null
   if (isObjectId(user_id)) userObjectId = new mongoose.Types.ObjectId(user_id)
   else if (typeof user_id === 'string' && isObjectId(user_id.toString())) userObjectId = new mongoose.Types.ObjectId(user_id.toString())

@@ -1,7 +1,7 @@
 const teams = require('../models/teams');
 const user = require('../models/user');
 
-
+// Utils
 function toUidArray(arr) {
   return (Array.isArray(arr) ? arr : [])
     .map((x) => {
@@ -11,7 +11,6 @@ function toUidArray(arr) {
     })
     .filter(Boolean);
 }
-
 
 function normalizeTeam(doc) {
   if (!doc) return null;
@@ -39,23 +38,34 @@ function normalizeTeam(doc) {
   };
 }
 
+// Helpers de mês (apenas na service)
+function toYearMonth(d) {
+  const dt = new Date(d || Date.now());
+  const y = dt.getUTCFullYear();
+  const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+function firstMonthForTeam(teamDoc) {
+  const base = teamDoc?.next_payment_date || teamDoc?.created_at || teamDoc?.createdAt || Date.now();
+  return toYearMonth(base);
+}
+function lastMonthForTeam() {
+  return toYearMonth(Date.now());
+}
 
+// Funções públicas já existentes
 async function listarTimes() {
   return await teams.find();
 }
 
-
 async function meuTime(uid) {
-  
   const filter = {
     $or: [
       { created_by: uid },
       { "created_by.uid": uid },
       { created_by_firebaseUid: uid },
-
       { representatives: { $elemMatch: { uid } } },
       { representatives: { $elemMatch: { firebaseUid: uid } } },
-
       { members: { $elemMatch: { uid } } },
       { members: { $elemMatch: { firebaseUid: uid } } }
     ]
@@ -71,27 +81,20 @@ async function meuTime(uid) {
   };
 }
 
-
 async function timeUid(uid) {
   try {
     if (!uid) throw new Error("UID ausente no timeUid()");
-
-    
     const filter = {
       $or: [
-        
         { created_by: uid },
         { "created_by.uid": uid },
         { created_by_firebaseUid: uid },
-
         { representatives: { $elemMatch: { uid } } },
         { representatives: { $elemMatch: { firebaseUid: uid } } },
-
         { members: { $elemMatch: { uid } } },
         { members: { $elemMatch: { firebaseUid: uid } } }
       ]
     };
-
     const docs = await teams.find(filter).lean();
     return (docs || []).map(normalizeTeam).filter(Boolean);
   } catch (e) {
@@ -101,20 +104,17 @@ async function timeUid(uid) {
 }
 
 
-
-// Busca por ID
 async function buscarTime(id) {
   const team = await teams.findById(id);
   if (!team) throw new Error("time não encontrado.");
   return team;
 }
 
-
 async function criarTime(dados) {
-  const { nome, description, logo_url, created_by, monthly_fee, members } = dados;
+  const { nome, description, logo_url, created_by, monthly_fee, members, next_payment_date } = dados;
 
-  if (!nome || !description || !created_by || !monthly_fee) {
-    throw new Error("Preencha todos os campos obrigatórios.");
+  if (!nome || !description || !created_by || !monthly_fee || !next_payment_date) {
+    throw new Error("Preencha todos os campos obrigatórios (inclua next_payment_date).");
   }
 
   const jaExiste = await teams.findOne({ nome });
@@ -124,23 +124,20 @@ async function criarTime(dados) {
     nome,
     description,
     logo_url: logo_url || "",
-    created_by,        
+    created_by,
     monthly_fee,
-    members: Array.isArray(members) && members.length ? members : [created_by]
+    members: Array.isArray(members) && members.length ? members : [created_by],
+    next_payment_date: new Date(next_payment_date)
   });
 
   return novoTime;
 }
 
-
 async function listarMembrosTime(teamId) {
   const team = await teams.findById(teamId);
   if (!team) throw new Error("Time não encontrado");
 
-
   const memberUids = toUidArray(team.members);
-
-  
   const users = await user.find(
     { firebaseUid: { $in: memberUids } },
     "nome firebaseUid"
@@ -148,7 +145,6 @@ async function listarMembrosTime(teamId) {
 
   const members = memberUids.map(uid => {
     const userData = users.find(u => u.firebaseUid === uid);
-    
     let originalUserType = null;
     for (const m of team.members) {
       const val = typeof m === "object" ? (m.uid || m.firebaseUid || m._id || m.id) : m;
@@ -167,7 +163,6 @@ async function listarMembrosTime(teamId) {
   return members;
 }
 
-
 async function atualizarTime(id, NovosDados) {
   const team = await teams.findByIdAndUpdate(id, NovosDados, {
     new: true,
@@ -177,11 +172,18 @@ async function atualizarTime(id, NovosDados) {
   return team;
 }
 
-
 async function deletarTime(id) {
   const team = await teams.findByIdAndDelete(id);
   if (!team) throw new Error("time não encontrado.");
   return { message: "time deletado com sucesso." };
+}
+
+async function monthRange(id) {
+  const team = await buscarTime(id);
+  return {
+    firstMonth: firstMonthForTeam(team),
+    lastMonth: lastMonthForTeam()
+  };
 }
 
 module.exports = {
@@ -192,5 +194,8 @@ module.exports = {
   deletarTime,
   meuTime,
   listarMembrosTime,
-  timeUid
+  timeUid,
+  firstMonthForTeam,
+  lastMonthForTeam,
+  monthRange
 };

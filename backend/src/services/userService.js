@@ -1,13 +1,11 @@
-
 const User = require("../models/user");
 const GameStats = require("../models/game_stats");
 const admin = require("../config/firebase");
 const allowedRoles = ["admin", "representante_time", "gestor_campo", "jogador"];
 
-
+// Estatísticas
 async function getUserStats(userId) {
   const stats = await GameStats.find({ firebaseUid: userId });
-
   if (!stats || stats.length === 0) {
     return {
       totalPartidas: 0,
@@ -21,7 +19,6 @@ async function getUserStats(userId) {
       mediaGols: 0,
     };
   }
-
   const total = stats.reduce(
     (acc, s) => {
       acc.gols += s.goals || 0;
@@ -43,18 +40,15 @@ async function getUserStats(userId) {
       participacoes: 0,
     }
   );
-
   total.totalPartidas = stats.length;
   total.mediaGols = total.gols / (stats.length || 1);
-
   return total;
 }
 
-
+// CRUD básico Mongo
 async function listarUsuarios() {
   return await User.find();
 }
-
 
 async function buscarUsuarioPorFirebaseUid(firebaseUid) {
   try {
@@ -66,7 +60,25 @@ async function buscarUsuarioPorFirebaseUid(firebaseUid) {
   }
 }
 
-
+// Consulta ao Firebase Admin (UserRecord) e harmonização de ausência
+async function buscarUsuarioNoFirebase(firebaseUid) {
+  try {
+    const rec = await admin.auth().getUser(firebaseUid); // retorna UserRecord quando existe [web:254]
+    // Se também existir no Mongo, priorize o doc local
+    const doc = await User.findOne({ firebaseUid });
+    if (doc) return doc;
+    // Retorne objeto “UserRecord-like” com chaves esperadas pelo controller
+    return {
+      uid: rec.uid,
+      displayName: rec.displayName || "",
+      email: rec.email || null,
+      _fromFirebase: true
+    };
+  } catch (err) {
+    if (err?.code === 'auth/user-not-found') return null; // ausência → 404 no controller [web:255]
+    throw err; // outros erros do Admin devem propagar
+  }
+}
 
 async function criarUsuario(dados) {
   try {
@@ -81,10 +93,9 @@ async function criarUsuario(dados) {
     let existingUser = await User.findOne({ firebaseUid });
     if (existingUser) {
       console.log("[Service] Usuário já existe no Mongo:", existingUser);
-      return existingUser; 
+      return existingUser;
     }
 
-    
     const novoUser = await User.create({
       nome,
       telefone,
@@ -106,9 +117,8 @@ async function criarUsuario(dados) {
   }
 }
 
-
+// Atualização com whitelisting
 const ALLOW_UPDATE = new Set(["nome", "telefone", "ativo", "user_type"]);
-
 
 function pickAllowed(data) {
   const out = {};
@@ -117,7 +127,6 @@ function pickAllowed(data) {
   }
   return out;
 }
-
 
 async function atualizarUsuario(firebaseUidAutenticado, novosDados) {
   if (!firebaseUidAutenticado) {
@@ -128,11 +137,9 @@ async function atualizarUsuario(firebaseUidAutenticado, novosDados) {
 
   const update = pickAllowed(novosDados);
 
-  
   if (update.nome) update.nome = String(update.nome).trim();
   if (update.telefone) update.telefone = String(update.telefone).trim();
 
-  
   if (Object.prototype.hasOwnProperty.call(update, "user_type")) {
     if (!allowedRoles.includes(update.user_type)) {
       const err = new Error(`Função inválida. Permitidas: ${allowedRoles.join(", ")}`);
@@ -155,13 +162,11 @@ async function atualizarUsuario(firebaseUidAutenticado, novosDados) {
   return user;
 }
 
-
 async function deletarUsuario(id) {
   const user = await User.findByIdAndDelete(id);
   if (!user) throw new Error("Usuário não encontrado");
   return { message: "Usuário deletado com sucesso" };
 }
-
 
 module.exports = {
   listarUsuarios,
@@ -169,5 +174,6 @@ module.exports = {
   atualizarUsuario,
   deletarUsuario,
   getUserStats,
-  buscarUsuarioPorFirebaseUid
+  buscarUsuarioPorFirebaseUid,
+  buscarUsuarioNoFirebase
 };
