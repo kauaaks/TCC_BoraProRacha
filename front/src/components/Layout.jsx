@@ -25,7 +25,8 @@ import {
   MapPin,
   Shield
 } from 'lucide-react'
-import { href, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth()
@@ -33,8 +34,9 @@ export default function Layout({ children }) {
   const location = useLocation()
   const navigate = useNavigate()
 
- 
+
   const nomeVisivel = (user?.nome || user?.displayName || user?.name || '').trim()
+
 
   const getNavigationItems = () => {
     if (!user) return []
@@ -49,50 +51,60 @@ export default function Layout({ children }) {
       { name: 'Financeiro', href: '/payments', icon: Wallet }
     ]
 
+    // Remover "Times" para jogador e representante_time
+    const filteredCommon = common.filter(item => {
+      if (item.name === 'Times') {
+        return !(userType === 'jogador' || userType === 'representante_time')
+      }
+      return true
+    })
+
     if (userType === 'admin') {
-      
       return [
-        ...common,
-        { name: 'Campos', href: '/fields', icon: MapPin },
+        ...filteredCommon,
         { name: 'Administração', href: '/admin', icon: Shield }
       ]
     }
 
     if (userType === 'gestor_campo') {
       return [
-        ...common,
+        ...filteredCommon,
         { name: 'Meus Campos', href: '/fields', icon: MapPin }
       ]
     }
 
     if (userType === 'representante_time') {
       return [
-      ...common,
-      { name: 'Meus Times', href: '/my-team', icon: Users }
-    ]
+        ...filteredCommon,
+        { name: 'Meus Times', href: '/my-team', icon: Users }
+      ]
     }
 
     if (userType === 'jogador') {
       return [
-        ...common,
-      { name: 'Meus Times', href: '/my-team', icon: Users }
-    ]
+        ...filteredCommon,
+        { name: 'Meus Times', href: '/my-team', icon: Users }
+      ]
     }
 
-    return common
+    return filteredCommon
   }
 
+
   const navigationItems = getNavigationItems()
+
 
   const handleNavigation = (href) => {
     navigate(href)
     setIsMobileMenuOpen(false)
   }
 
+
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
+
 
   const getUserInitials = (name) => {
     return name
@@ -103,6 +115,7 @@ export default function Layout({ children }) {
       .slice(0, 2) || 'U'
   }
 
+
   const getUserTypeLabel = (userType) => {
     const types = {
       'admin': 'Administrador',
@@ -112,6 +125,7 @@ export default function Layout({ children }) {
     }
     return types[userType] || 'Usuário'
   }
+
 
   const SidebarContent = ({ isMobile = false }) => (
     <div className="flex flex-col h-full">
@@ -183,6 +197,7 @@ export default function Layout({ children }) {
       </div>
     </div>
   )
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -260,4 +275,4 @@ export default function Layout({ children }) {
       </div>
     </div>
   )
-}
+} 

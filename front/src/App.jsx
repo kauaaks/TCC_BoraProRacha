@@ -13,6 +13,8 @@ import Games from './components/Games'
 import Payments from './components/Payments'
 import Stats from './components/Stats'
 import Profile from './pages/Profile'
+import JoinTeam from './pages/invitations/join'  
+
 
 import PrivateRoute from './routes/PrivateRoute'
 
@@ -140,6 +142,16 @@ function AppRoutes() {
         }
       />
 
+      <Route
+        path="/invitations/join"
+        element={
+          <PrivateRoute allowedTypes={['jogador', 'representante_time', 'admin', 'gestor_campo']}>
+            <Layout>
+              <JoinTeam />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
     </Routes>
 
       

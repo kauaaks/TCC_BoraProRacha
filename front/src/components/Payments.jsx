@@ -224,199 +224,241 @@ export default function Financeiro() {
     return members.filter(i => (i.user_id?.nome || '').toLowerCase().includes(q))
   }, [members, searchMember])
 
-  return (
-    <div className="space-y-4">
-      <h1 className="text-3xl font-bold text-gray-900">Financeiro</h1>
-      <p className="text-gray-600 mt-1">
-        {isRep ? 'Selecione um time, escolha o mês e revise os pagamentos.' : 'Selecione um time, escolha o mês e envie o comprovante.'}
-      </p>
+return (
+  <div className="space-y-4">
+    <h1 className="text-3xl font-bold text-gray-900">Financeiro</h1>
+    <p className="text-gray-600 mt-1">
+      {isRep
+        ? 'Selecione um time, escolha o mês e revise os pagamentos.'
+        : 'Selecione um time, escolha o mês e envie o comprovante.'}
+    </p>
 
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-        {teams.map((t) => {
-          const id = String(t.id || t._id)
-          const active = teamId === id
+    {/* MENSAGEM DE INCENTIVO PARA JOGADOR */}
+    {isJog && (
+      <div className="mb-3 bg-blue-50 border-l-4 border-blue-400 p-3 rounded text-blue-900">
+        Envie o comprovante da mensalidade assim que efetuar o pagamento. Só o representante tem acesso à sua imagem!
+      </div>
+    )}
+
+    {/* GRID DE TIMES */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+      {teams.map((t) => {
+        const id = String(t.id || t._id)
+        const active = teamId === id
+        return (
+          <div
+            key={id}
+            className={`p-4 rounded-lg border bg-white flex items-center justify-between cursor-pointer ${active ? 'ring-2 ring-emerald-500' : 'hover:shadow'} transition`}
+            onClick={() => setTeamId(id)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center">
+                <Users className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="font-medium">{t.nome || t.name}</div>
+                <div className="text-xs text-gray-500">{t.description || 'Time'}</div>
+              </div>
+            </div>
+            {active && <span className="text-xs text-emerald-700 font-medium">Selecionado</span>}
+          </div>
+        )
+      })}
+      {teams.length === 0 && (
+        <div className="text-sm text-gray-500">Nenhum time disponível.</div>
+      )}
+    </div>
+
+    {/* SELEÇÃO DE MÊS */}
+    <div className="mt-2 flex items-center gap-3">
+      <div className="w-52">
+        <label className="text-sm text-gray-600">Mês (YYYY-MM)</label>
+        <Input value={month} onChange={(e) => setMonth(e.target.value)} placeholder="YYYY-MM" />
+      </div>
+      <Button variant="outline" onClick={loadCycles}>Atualizar</Button>
+    </div>
+
+    {loading ? (
+      <div className="text-center py-9">Carregando informações...</div>
+    ) : isJog ? (
+      // VISÃO JOGADOR
+      <div className="space-y-4 mt-6">
+        {cards.length === 0 && (
+          <div className="text-sm text-gray-500">Nenhum ciclo encontrado para este mês.</div>
+        )}
+        {cards.map(payment => {
+          const isPago = payment.label === 'Pago'
           return (
             <div
-              key={id}
-              className={`p-4 rounded-lg border bg-white flex items-center justify-between cursor-pointer ${active ? 'ring-2 ring-emerald-500' : 'hover:shadow'} transition`}
-              onClick={() => setTeamId(id)}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <div className="font-medium">{t.nome || t.name}</div>
-                  <div className="text-xs text-gray-500">{t.description || 'Time'}</div>
-                </div>
-              </div>
-              {active && <span className="text-xs text-emerald-700 font-medium">Selecionado</span>}
-            </div>
-          )
-        })}
-        {teams.length === 0 && (
-          <div className="text-sm text-gray-500">Nenhum time disponível.</div>
-        )}
-      </div>
-
-     
-      <div className="mt-2 flex items-center gap-3">
-        <div className="w-52">
-          <label className="text-sm text-gray-600">Mês (YYYY-MM)</label>
-          <Input value={month} onChange={(e) => setMonth(e.target.value)} placeholder="YYYY-MM" />
-        </div>
-        <Button variant="outline" onClick={loadCycles}>Atualizar</Button>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-9">Carregando informações...</div>
-      ) : (
-        <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 ${isRep ? 'mt-4' : 'mt-6'}`}>
-          {cards.map(payment => (
-            <div
               key={payment.id}
-              className={`bg-white rounded-xl shadow-md p-5 flex flex-col gap-3 border ${isRep ? 'cursor-pointer hover:shadow-lg transition' : ''}`}
-              onClick={() => isRep && openMonthMembers(payment.month)}
+              className="bg-white rounded-xl shadow-md p-5 flex flex-col gap-3 border"
             >
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-lg">{payment.monthLabel || payment.month}</span>
                 <span className={`px-2 py-1 rounded text-xs font-semibold ${badgeColors[payment.label] || 'bg-gray-100 text-gray-600'}`}>{payment.label}</span>
               </div>
-
               <div className="text-gray-500 text-sm">Vencimento: {payment.dueBR}</div>
               <div className="text-gray-700 text-sm">
                 Valor: <span className="font-medium">{fmtBRL(payment.amount)}</span>
               </div>
-              {payment.label === 'Pago' && payment.paidOnBR && (
-                <div className="text-green-600 text-xs">Pago em {payment.paidOnBR}</div>
-              )}
-
-              {isJog && (
-                <div className="mt-1" onClick={(e)=> e.stopPropagation()}>
-                  <label className="text-sm text-gray-600">Comprovante</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Input type="file" accept="image/*" onChange={(e) => setFiles(prev => ({ ...prev, [payment.id]: e.target.files?.[0] || null }))} />
-                    <Button size="sm" onClick={() => uploadReceipt(payment)} disabled={uploading[payment.id]}>
-                      <Upload className="w-4 h-4 mr-2" /> {uploading[payment.id] ? 'Enviando...' : 'Enviar'}
-                    </Button>
-                  </div>
-
-                  {payment.receipt_url && (
-                    <div className="flex items-center gap-3 mt-2">
-                      <button
-                        className="text-xs text-blue-600 underline"
-                        onClick={()=> setPreview({ open:true, src: toAbsolute(payment.receipt_url), title: `Comprovante - ${payment.monthLabel || payment.month}` })}
-                      >
-                        Ver comprovante
-                      </button>
-                      <button
-                        className="text-xs text-red-600 underline"
-                        onClick={()=> removeReceipt(payment)}
-                      >
-                        Remover comprovante
-                      </button>
-                    </div>
-                  )}
+              {isPago && payment.paidOnBR && (
+                <div className="text-green-700 text-base font-semibold">
+                  Você está em dia! <span className="text-xs text-gray-600">(pago em {payment.paidOnBR})</span>
                 </div>
               )}
-            </div>
-          ))}
-          {cards.length === 0 && (
-            <div className="text-sm text-gray-500">Nenhum ciclo encontrado para este mês.</div>
-          )}
-        </div>
-      )}
-
-      {isRep && cards.length === 0 && (
-        <div className="mt-2">
-          <Button size="sm" onClick={() => openMonthMembers(month)}>
-            Ver membros do mês
-          </Button>
-        </div>
-      )}
-
-      {isRep && openMonth && (
-        <div className="space-y-3 mt-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Membros — {ymToLabel(openMonth)}</h2>
-            <div className="w-64">
-              <Input placeholder="Buscar membro" value={searchMember} onChange={(e)=>setSearchMember(e.target.value)} />
-            </div>
-          </div>
-
-          {membersLoading ? (
-            <div className="text-gray-500 py-4">Carregando membros...</div>
-          ) : filteredMembers.length === 0 ? (
-            <div className="text-sm text-gray-500">Nenhum membro encontrado.</div>
-          ) : (
-            <div className="space-y-3">
-              {filteredMembers.map((row) => {
-                const rawStatus = row.status === 'awaiting_approval' ? 'awaiting_approval' : row.status
-                const label = toLabel(rawStatus, row.due_date)
-                const nome = row.user_id?.nome || 'Jogador'
-                const color = badgeColors[label] || 'bg-gray-100 text-gray-700'
-                const dueBR = row.due_date ? new Date(row.due_date).toLocaleDateString('pt-BR') : '--'
-                const paidAt = row.paid_at ? new Date(row.paid_at).toLocaleDateString('pt-BR') : null
-                const uid = row.user_id?._id || row.user_id
-
-                return (
-                  <div key={uid} className="p-3 rounded-md border bg-white flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-gray-200 flex items-center justify-center text-sm font-bold">
-                        {nome.slice(0,2).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{nome}</span>
-                          <span className={`px-2 py-0.5 rounded text-xs ${color}`}>{label === 'Aguardando Verificação' ? 'Esperando aprovação' : label}</span>
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          Vencimento: {dueBR} • Valor: {fmtBRL(row.amount)}
-                          {paidAt && <span className="ml-2 text-green-700">Pago em {paidAt}</span>}
-                        </div>
-                        {row.receipt_url && (
-                          <button
-                            className="text-xs text-blue-600 underline mt-1 flex items-center gap-1"
-                            onClick={()=> setPreview({ open:true, src: toAbsolute(row.receipt_url), title: `Comprovante - ${nome}` })}
-                          >
-                            <Eye className="w-3 h-3" /> Ver comprovante
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={()=>markUnpaid(uid)}>
-                        <XCircle className="w-4 h-4 mr-1" /> Não pago
-                      </Button>
-                      <Button size="sm" onClick={()=>markPaid(uid)}>
-                        <CheckCircle2 className="w-4 h-4 mr-1" /> Pago
-                      </Button>
-                    </div>
+              {!isPago && (
+                <div className="text-yellow-800 bg-yellow-50 border border-yellow-100 px-3 py-2 rounded mb-1 text-sm">
+                  {payment.label === 'Aguardando Verificação'
+                    ? 'Seu pagamento está aguardando verificação pelo representante.'
+                    : 'Envie o comprovante assim que pagar sua mensalidade.'}
+                </div>
+              )}
+              <div className="mt-1">
+                <label className="text-sm text-gray-600">Comprovante</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input type="file" accept="image/*" onChange={(e) => setFiles(prev => ({ ...prev, [payment.id]: e.target.files?.[0] || null }))} />
+                  <Button size="sm" onClick={() => uploadReceipt(payment)} disabled={uploading[payment.id]}>
+                    <Upload className="w-4 h-4 mr-2" /> {uploading[payment.id] ? 'Enviando...' : 'Enviar'}
+                  </Button>
+                </div>
+                {payment.receipt_url && (
+                  <div className="flex items-center gap-3 mt-2">
+                    <button
+                      className="text-xs text-blue-600 underline"
+                      onClick={()=> setPreview({ open:true, src: toAbsolute(payment.receipt_url), title: `Comprovante - ${payment.monthLabel || payment.month}` })}
+                    >
+                      Ver comprovante
+                    </button>
+                    <button
+                      className="text-xs text-red-600 underline"
+                      onClick={()=> removeReceipt(payment)}
+                    >
+                      Remover comprovante
+                    </button>
                   </div>
-                )
-              })}
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      )}
-
-      <Dialog open={preview.open} onOpenChange={(o)=>setPreview(p=>({...p, open:o}))}>
-        <DialogContent className="max-w-xl" aria-describedby="receipt-desc">
-          <DialogHeader>
-            <DialogTitle>{preview.title}</DialogTitle>
-          </DialogHeader>
-          <p id="receipt-desc" className="sr-only">Comprovante enviado pelo jogador</p>
-          <div className="w-full">
-            {preview.src ? (
-              <img src={preview.src} alt="Comprovante" className="w-full rounded border" />
-            ) : (
-              <div className="text-sm text-gray-500">Sem imagem</div>
+          )
+        })}
+      </div>
+    ) : (
+      // VISÃO REPRESENTANTE - MANTÉM SUA LÓGICA ATUAL
+      <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 ${isRep ? 'mt-4' : 'mt-6'}`}>
+        {cards.map(payment => (
+          <div
+            key={payment.id}
+            className={`bg-white rounded-xl shadow-md p-5 flex flex-col gap-3 border ${isRep ? 'cursor-pointer hover:shadow-lg transition' : ''}`}
+            onClick={() => isRep && openMonthMembers(payment.month)}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-lg">{payment.monthLabel || payment.month}</span>
+              <span className={`px-2 py-1 rounded text-xs font-semibold ${badgeColors[payment.label] || 'bg-gray-100 text-gray-600'}`}>{payment.label}</span>
+            </div>
+            <div className="text-gray-500 text-sm">Vencimento: {payment.dueBR}</div>
+            <div className="text-gray-700 text-sm">
+              Valor: <span className="font-medium">{fmtBRL(payment.amount)}</span>
+            </div>
+            {payment.label === 'Pago' && payment.paidOnBR && (
+              <div className="text-green-600 text-xs">Pago em {payment.paidOnBR}</div>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
+        ))}
+        {cards.length === 0 && (
+          <div className="text-sm text-gray-500">Nenhum ciclo encontrado para este mês.</div>
+        )}
+      </div>
+    )}
+
+    {/* Outras lógicas para representante */}
+    {isRep && cards.length === 0 && (
+      <div className="mt-2">
+        <Button size="sm" onClick={() => openMonthMembers(month)}>
+          Ver membros do mês
+        </Button>
+      </div>
+    )}
+
+    {isRep && openMonth && (
+      <div className="space-y-3 mt-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Membros — {ymToLabel(openMonth)}</h2>
+          <div className="w-64">
+            <Input placeholder="Buscar membro" value={searchMember} onChange={(e)=>setSearchMember(e.target.value)} />
+          </div>
+        </div>
+        {membersLoading ? (
+          <div className="text-gray-500 py-4">Carregando membros...</div>
+        ) : filteredMembers.length === 0 ? (
+          <div className="text-sm text-gray-500">Nenhum membro encontrado.</div>
+        ) : (
+          <div className="space-y-3">
+            {filteredMembers.map((row) => {
+              const rawStatus = row.status === 'awaiting_approval' ? 'awaiting_approval' : row.status
+              const label = toLabel(rawStatus, row.due_date)
+              const nome = row.user_id?.nome || 'Jogador'
+              const color = badgeColors[label] || 'bg-gray-100 text-gray-700'
+              const dueBR = row.due_date ? new Date(row.due_date).toLocaleDateString('pt-BR') : '--'
+              const paidAt = row.paid_at ? new Date(row.paid_at).toLocaleDateString('pt-BR') : null
+              const uid = row.user_id?._id || row.user_id
+
+              return (
+                <div key={uid} className="p-3 rounded-md border bg-white flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-gray-200 flex items-center justify-center text-sm font-bold">
+                      {nome.slice(0,2).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{nome}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs ${color}`}>{label === 'Aguardando Verificação' ? 'Esperando aprovação' : label}</span>
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        Vencimento: {dueBR} • Valor: {fmtBRL(row.amount)}
+                        {paidAt && <span className="ml-2 text-green-700">Pago em {paidAt}</span>}
+                      </div>
+                      {row.receipt_url && (
+                        <button
+                          className="text-xs text-blue-600 underline mt-1 flex items-center gap-1"
+                          onClick={()=> setPreview({ open:true, src: toAbsolute(row.receipt_url), title: `Comprovante - ${nome}` })}
+                        >
+                          <Eye className="w-3 h-3" /> Ver comprovante
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={()=>markUnpaid(uid)}>
+                      <XCircle className="w-4 h-4 mr-1" /> Não pago
+                    </Button>
+                    <Button size="sm" onClick={()=>markPaid(uid)}>
+                      <CheckCircle2 className="w-4 h-4 mr-1" /> Pago
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )}
+
+    <Dialog open={preview.open} onOpenChange={(o)=>setPreview(p=>({...p, open:o}))}>
+      <DialogContent className="max-w-xl" aria-describedby="receipt-desc">
+        <DialogHeader>
+          <DialogTitle>{preview.title}</DialogTitle>
+        </DialogHeader>
+        <p id="receipt-desc" className="sr-only">Comprovante enviado pelo jogador</p>
+        <div className="w-full">
+          {preview.src ? (
+            <img src={preview.src} alt="Comprovante" className="w-full rounded border" />
+          ) : (
+            <div className="text-sm text-gray-500">Sem imagem</div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  </div>
+)
+
 }
