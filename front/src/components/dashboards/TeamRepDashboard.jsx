@@ -149,7 +149,7 @@ export default function TeamRepDashboard({ data, teamId }) {
     <div className="space-y-6 fade-in">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-gray-900">
-          Bora pro Racha, {firstName}!
+          BoraProRacha, {firstName}!
         </h1>
         <p className="text-gray-600">
           Representante • {new Date().toLocaleDateString('pt-BR', {
@@ -214,7 +214,7 @@ export default function TeamRepDashboard({ data, teamId }) {
                 <div className="space-y-3">
                   <div>
                     <label className="text-sm text-gray-600">Nome</label>
-                    <Input value={form.nome} onChange={setF('nome')} placeholder="Ex: Bora Pro Racha FC" />
+                    <Input value={form.nome} onChange={setF('nome')} placeholder="Ex: BoraProRacha, FC" />
                   </div>
                   <div>
                     <label className="text-sm text-gray-600">Descrição</label>

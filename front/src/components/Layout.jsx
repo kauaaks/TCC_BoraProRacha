@@ -134,7 +134,7 @@ export default function Layout({ children }) {
           <Users className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Bora Pro Racha</h1>
+          <h1 className="text-xl font-bold text-gray-900">BoraProRacha</h1>
           <p className="text-xs text-gray-500">
             {nomeVisivel || 'Usuário'} {user?.user_type && `• ${getUserTypeLabel(user.user_type)}`}
           </p>
@@ -228,7 +228,7 @@ export default function Layout({ children }) {
               <div className="w-8 h-8 bg-gradient-to-br from-appsociety-green to-appsociety-blue rounded-lg flex items-center justify-center">
                 <Users className="w-4 h-4 text-white" />
               </div>
-              <h1 className="text-lg font-bold text-gray-900">Bora Pro Racha</h1>
+              <h1 className="text-lg font-bold text-gray-900">BoraProRacha,</h1>
             </div>
           </div>
 

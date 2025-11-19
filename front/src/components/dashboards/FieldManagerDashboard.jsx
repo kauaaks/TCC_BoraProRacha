@@ -9,7 +9,7 @@ export default function FieldManagerDashboard({ data }) {
     <div className="space-y-6 fade-in">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-gray-900">
-          Bora pro Racha, {user?.name?.split(' ')[0]}!
+          BoraProRacha, {user?.name?.split(' ')[0]}!
         </h1>
         <p className="text-gray-600">
           Gestor de Campo • {new Date().toLocaleDateString('pt-BR', {

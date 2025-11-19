@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Eye, EyeOff, Users, Shield } from 'lucide-react'
+import { Eye, EyeOff, Users, Shield, X } from 'lucide-react'
 import logoImg from '../assets/logo6.png'
 import './Login.css'
 
@@ -17,6 +17,8 @@ export default function Login() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [activeTab, setActiveTab] = useState('login')
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false)
+  const [showTermsModal, setShowTermsModal] = useState(false)
 
   // Estados do formulário de login
   const [loginData, setLoginData] = useState({
@@ -84,13 +86,50 @@ export default function Login() {
 }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4 relative">
+
+      {/* Modal de Política de Privacidade */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full relative animate-fadeIn max-h-[90vh] overflow-y-auto p-6">
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+              onClick={() => setShowPrivacyModal(false)}
+            >
+              <X size={24} />
+            </button>
+            <PrivacyPolicyContent />
+            <div className="text-right mt-6">
+              <Button onClick={() => setShowPrivacyModal(false)}>Fechar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Termos de Uso */}
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full relative animate-fadeIn max-h-[90vh] overflow-y-auto p-6">
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+              onClick={() => setShowTermsModal(false)}
+            >
+              <X size={24} />
+            </button>
+            <TermsOfUseContent />
+            <div className="text-right mt-6">
+              <Button onClick={() => setShowTermsModal(false)}>Fechar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="w-full max-w-md space-y-6 fade-in">
         {/* Logo e Título */}
         <div className="text-center space-y-4">
           <img src={logoImg} alt="Logo" className="mx-auto w-30 h-30 rounded-2xl shadow-lg" />
           <div>
-            <h1 className="text-3xl font-bold text-white">Bora pro Racha!</h1>
+            <h1 className="text-3xl font-bold text-white">BoraProRacha!</h1>
             <p className="text-white">Gestão completa para times de futebol society</p>
           </div>
         </div>
@@ -273,16 +312,167 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        {/* Informações adicionais */}
+        {/* Links para Termos e Política */}
         <div className="text-center text-sm text-white">
           <p>Ao criar uma conta, você concorda com nossos</p>
           <p>
-            <a href="#" className="text-appsociety-blue hover:underline">Termos de Uso</a>
-            {' e '}
-            <a href="#" className="text-appsociety-blue hover:underline">Política de Privacidade</a>
+            <button
+              type="button"
+              className="text-appsociety-blue hover:underline mr-1"
+              onClick={() => setShowTermsModal(true)}
+            >
+              Termos de Uso
+            </button>
+            e
+            <button
+              type="button"
+              className="text-appsociety-blue hover:underline ml-1"
+              onClick={() => setShowPrivacyModal(true)}
+            >
+              Política de Privacidade
+            </button>
           </p>
         </div>
       </div>
+    </div>
+  )
+}
+
+// Componente de Política de Privacidade dentro do modal
+function PrivacyPolicyContent() {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold mb-2">Política de Privacidade</h1>
+      <p className="mb-4 font-medium text-gray-700">
+        Ao acessar nosso site ou baixar o aplicativo <strong>BoraProRacha</strong>, você concorda com esta Política de Privacidade e com o tratamento dos seus dados pessoais, de acordo com a LGPD (Lei Geral de Proteção de Dados - Lei nº 13.709/2018).
+      </p>
+      <p>Coletamos apenas os dados necessários para o funcionamento da plataforma, incluindo:</p>
+      <ul className="list-disc list-inside mb-2">
+        <li>Informações de cadastro: nome, e-mail, nome de usuário;</li>
+        <li>Informações de perfil: avatar, dados do time e cargos;</li>
+        <li>Dados de participação: histórico de jogos, convites aceitos e pagamentos;</li>
+        <li>Dados técnicos: IP, tipo de navegador e informações de dispositivo para melhoria da plataforma.</li>
+      </ul>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">2. Uso dos Dados</h2>
+      <p>Seus dados são utilizados para:</p>
+      <ul className="list-disc list-inside mb-2">
+        <li>Permitir o cadastro e login de usuários;</li>
+        <li>Gerenciar times, jogos, convites e pagamentos;</li>
+        <li>Enviar notificações e atualizações relevantes;</li>
+        <li>Melhorar a experiência e segurança do sistema.</li>
+      </ul>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">3. Compartilhamento de Dados</h2>
+      <p>Não compartilhamos seus dados pessoais com terceiros para fins comerciais. Compartilhamentos podem ocorrer apenas quando:</p>
+      <ul className="list-disc list-inside mb-2">
+        <li>Exigido por lei ou ordem judicial;</li>
+        <li>Necessário para prestação de serviços essenciais, como processamento de pagamentos;</li>
+        <li>Autorizado por você previamente.</li>
+      </ul>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">4. Segurança dos Dados</h2>
+      <p>Adotamos medidas técnicas e administrativas para proteger seus dados contra acessos não autorizados, vazamentos ou alterações indevidas. O acesso aos dados pessoais é restrito apenas a pessoas autorizadas.</p>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">5. Direitos do Usuário</h2>
+      <p>Em conformidade com a LGPD, você tem direito de:</p>
+      <ul className="list-disc list-inside mb-2">
+        <li>Acessar e corrigir seus dados pessoais;</li>
+        <li>Solicitar a exclusão de seus dados;</li>
+        <li>Revogar consentimentos concedidos;</li>
+        <li>Solicitar portabilidade dos dados para outro serviço;</li>
+        <li>Obter informações sobre o compartilhamento de seus dados.</li>
+      </ul>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">6. Contato</h2>
+      <p>Em caso de dúvidas sobre esta política ou sobre seus dados pessoais, você pode entrar em contato pelo e-mail: <strong>contato@boraproracha.com.br</strong>.</p>
+
+      <p className="mt-4 text-gray-500 text-sm">
+        Esta Política de Privacidade pode ser atualizada periodicamente. Recomendamos que revise esta página regularmente.
+      </p>
+    </div>
+  )
+}
+
+// Componente de Termos de Uso
+function TermsOfUseContent() {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold mb-2">Termos de Uso</h1>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">1. Introdução</h2>
+      <p>
+        Bem-vindo ao <strong>BoraProRacha</strong>. Estes Termos de Uso constituem um contrato legal entre você, usuário, e a plataforma <strong>BoraProRacha</strong>, regulamentando o acesso e utilização de nossos serviços. Ao utilizar a plataforma, você concorda com todas as condições aqui descritas.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">2. Objetivo</h2>
+      <p>
+        O objetivo destes Termos de Uso é definir regras de uso, direitos e responsabilidades tanto do usuário quanto da plataforma, garantindo uma experiência segura, organizada e em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)</strong>.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">3. Uso do Serviço</h2>
+      <p>
+        Você concorda em utilizar a plataforma apenas para fins legais e de acordo com as normas estabelecidas neste documento. É proibido:
+      </p>
+      <ul className="list-disc list-inside mb-2">
+        <li>Utilizar a plataforma para praticar atos ilícitos ou contrários à legislação vigente;</li>
+        <li>Compartilhar conteúdo ofensivo, discriminatório, difamatório ou que viole direitos de terceiros;</li>
+        <li>Tentar acessar contas de outros usuários sem autorização;</li>
+        <li>Modificar, distribuir ou reproduzir de forma não autorizada qualquer recurso da plataforma.</li>
+      </ul>
+      <p>O uso da plataforma deve respeitar as regras de conduta, mantendo um ambiente seguro e saudável para todos os usuários.</p>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">4. Direitos Autorais e Propriedade Intelectual</h2>
+      <p>
+        Todo o conteúdo disponibilizado na plataforma, incluindo textos, imagens, design, logos, ícones, software e códigos, é de propriedade exclusiva do <strong>BoraProRacha</strong> ou de seus licenciadores. É proibido copiar, reproduzir, modificar, distribuir ou criar obras derivadas sem autorização expressa da plataforma.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">5. Limitação de Responsabilidade</h2>
+      <p>
+        O <strong>BoraProRacha</strong> se esforça para garantir a disponibilidade, segurança e precisão das informações, mas não se responsabiliza por:
+      </p>
+      <ul className="list-disc list-inside mb-2">
+        <li>Danose diretos ou indiretos decorrentes do uso da plataforma;</li>
+        <li>Perda de dados ou interrupções temporárias do serviço;</li>
+        <li>Condutas de terceiros ou ações externas à plataforma.</li>
+      </ul>
+      <p>O usuário reconhece que utiliza o serviço por sua própria conta e risco.</p>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">6. Suspensão ou Encerramento de Contas</h2>
+      <p>
+        A plataforma reserva-se o direito de suspender ou encerrar contas de usuários que:
+      </p>
+      <ul className="list-disc list-inside mb-2">
+        <li>Descumpram qualquer termo destes Termos de Uso;</li>
+        <li>Pratiquem atos ilícitos ou prejudiciais a outros usuários;</li>
+        <li>Violarem direitos de propriedade intelectual da plataforma ou de terceiros.</li>
+      </ul>
+      <p>O encerramento de contas não exime o usuário de responsabilidades legais ou obrigações financeiras pendentes.</p>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">7. Política de Pagamentos</h2>
+      <p>
+        Se aplicável, os serviços pagos da plataforma seguem as condições descritas:
+      </p>
+      <ul className="list-disc list-inside mb-2">
+        <li>Pagamentos são processados de forma segura e transparente, por meio da respectiva loja de aplicativos;</li>
+        <li>Não há reembolso para assinaturas ou serviços consumidos, salvo em casos previstos em lei;</li>
+        <li>O usuário é responsável por manter informações de pagamento atualizadas e corretas.</li>
+      </ul>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">8. Proteção de Dados</h2>
+      <p>
+        Todos os dados pessoais coletados são tratados de acordo com a <strong>Política de Privacidade</strong> da plataforma e em conformidade com a LGPD. O usuário tem direito a acessar, corrigir ou solicitar exclusão de seus dados pessoais, bem como revogar consentimentos previamente concedidos.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">9. Alterações dos Termos</h2>
+      <p>
+        O <strong>BoraProRacha</strong> pode atualizar estes Termos de Uso periodicamente. Mudanças relevantes serão comunicadas e os usuários deverão concordar com os novos termos para continuar utilizando a plataforma.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-4 mb-2">10. Contato</h2>
+      <p>
+        Em caso de dúvidas sobre estes Termos de Uso ou sobre a plataforma, você pode entrar em contato pelo e-mail: <strong>contato@boraproracha.com.br</strong>.
+      </p>
     </div>
   )
 }

@@ -13,7 +13,9 @@ import Games from './components/Games'
 import Payments from './components/Payments'
 import Stats from './components/Stats'
 import Profile from './pages/Profile'
-import JoinTeam from './pages/invitations/join'  
+import JoinTeam from './pages/invitations/join'
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfUse from './pages/TermsOfUse';  
 
 
 import PrivateRoute from './routes/PrivateRoute'
@@ -28,6 +30,8 @@ function AppRoutes() {
       {/* Login */}
       <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
       <Route path="/" element={<Navigate to="/dashboard" />} />
+      <Route path="/privacy-policy" element={<Layout><PrivacyPolicy /></Layout>} />
+      <Route path="/terms-of-use" element={<Layout><TermsOfUse /></Layout>} />
       <Route
         path="/convite/:token"
         element={

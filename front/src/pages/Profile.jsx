@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Pencil, Image as ImageIcon } from "lucide-react";
+import { Link } from 'react-router-dom';
 
 export default function Profile() {
   const { user, apiCall, setUser } = useAuth();
@@ -128,16 +129,16 @@ export default function Profile() {
 
         <h2 className="text-lg font-semibold mb-4 text-gray-800">Sistema</h2>
         <div className="text-gray-400 mb-2">
-          Bora Pro Racha © {new Date().getFullYear()}
+          BoraProRacha© {new Date().getFullYear()}
         </div>
         <div className="flex gap-2">
-          <a href="#" className="text-xs underline hover:text-[#00B04F]">
+          <Link to="/terms-of-use" className="text-xs underline hover:text-[#00B04F]">
             Termos de Uso
-          </a>
-          <span>·</span>
-          <a href="#" className="text-xs underline hover:text-[#2196F3]">
+          </Link>
+          <span>|</span>
+          <Link to="/privacy-policy" className="text-xs underline hover:text-[#2196F3]">
             Política de Privacidade
-          </a>
+          </Link>
         </div>
       </div>
 
