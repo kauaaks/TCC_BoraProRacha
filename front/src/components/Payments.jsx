@@ -22,8 +22,8 @@ const toLabel = (status, dueISO) => {
 }
 
 const badgeColors = {
-  'Pendente': 'bg-yellow-100 text-yellow-800',
-  'Pago': 'bg-green-100 text-green-800',
+  Pendente: 'bg-yellow-100 text-yellow-800',
+  Pago: 'bg-green-100 text-green-800',
   'Não pago': 'bg-red-100 text-red-800',
   'Aguardando Verificação': 'bg-blue-100 text-blue-800',
   'Esperando aprovação': 'bg-blue-100 text-blue-800',
@@ -67,14 +67,14 @@ export default function Financeiro() {
   const isRep = role === 'representante_time'
   const isJog = role === 'jogador'
 
- 
+  // ADMIN STATES
   const [adminTeams, setAdminTeams] = useState([])
   const [selectedAdminTeam, setSelectedAdminTeam] = useState(null)
   const [adminMembers, setAdminMembers] = useState([])
   const [adminLoading, setAdminLoading] = useState(true)
   const [adminDetailsOpen, setAdminDetailsOpen] = useState(false)
 
-  
+  // REP/JOG STATES
   const [teams, setTeams] = useState([])
   const [teamId, setTeamId] = useState('')
   const [payments, setPayments] = useState([])
@@ -90,7 +90,20 @@ export default function Financeiro() {
   const [preview, setPreview] = useState({ open: false, src: '', title: '' })
   const [searchMember, setSearchMember] = useState('')
 
-  
+  // CORREÇÃO: limpar estado quando trocar de time (evita dados do time anterior)
+  useEffect(() => {
+    if (!teamId) return
+    setOpenMonth('')
+    setMembers([])
+    setMembersLoading(false)
+    setSearchMember('')
+    setFiles({})
+    setPreviewMap({})
+    setUploading({})
+    setPreview({ open: false, src: '', title: '' })
+  }, [teamId]) // [web:652][web:649]
+
+  // ========== ADMIN ==========
   useEffect(() => {
     if (!isAdmin) return
     async function fetchTeams() {
@@ -105,7 +118,7 @@ export default function Financeiro() {
       }
     }
     fetchTeams()
-  }, [isAdmin, apiCall])
+  }, [isAdmin, apiCall]) // [web:649]
 
   async function openAdminDetails(team) {
     setSelectedAdminTeam(team)
@@ -132,7 +145,7 @@ export default function Financeiro() {
     setAdminDetailsOpen(false)
   }
 
-  
+  // ========== REP/JOG ==========
   const normalizeTeams = (raw) => {
     if (!raw) return []
     if (Array.isArray(raw)) return raw
@@ -177,9 +190,8 @@ export default function Financeiro() {
         setTeams([])
       }
     })()
-  }, [isRep, isJog, user?.uid, apiCall])
+  }, [isRep, isJog, user?.uid, apiCall]) // [web:649]
 
-  
   const fetchMonthRange = async (id) => {
     if (!id) {
       const now = getCurrentMonth()
@@ -207,7 +219,7 @@ export default function Financeiro() {
         return
       }
     } catch {
-      
+      // fallback
     }
     const t = (teams || []).find((tt) => String(tt.id || tt._id) === String(id))
     const first = t?.created_at ? toYearMonth(t.created_at) : getCurrentMonth()
@@ -228,9 +240,8 @@ export default function Financeiro() {
     if (!isRep && !isJog) return
     if (!teamId) return
     fetchMonthRange(teamId)
-  }, [teamId, isRep, isJog])
+  }, [teamId, isRep, isJog]) // [web:649]
 
-  
   const loadCycles = async (signal) => {
     setLoading(true)
     try {
@@ -265,7 +276,6 @@ export default function Financeiro() {
     }
   }
 
-  
   const rangeReady = Boolean(range.firstMonth || range.lastMonth)
   useEffect(() => {
     if (!isRep && !isJog) return
@@ -275,9 +285,8 @@ export default function Financeiro() {
     setLoading(true)
     loadCycles(controller.signal)
     return () => controller.abort()
-  }, [teamId, month, apiCall, rangeReady, isRep, isJog])
+  }, [teamId, month, apiCall, rangeReady, isRep, isJog]) // [web:649]
 
- 
   const isValidImage = (file) => file && /^image\/(png|jpe?g|webp)$/i.test(file.type)
   const isSmallEnough = (file, maxMB = 8) => file && file.size <= maxMB * 1024 * 1024
 
@@ -394,17 +403,19 @@ export default function Financeiro() {
     return payments.map((payment) => {
       const label = toLabel(payment.status, payment.due)
       const dueBR = payment.due ? new Date(payment.due).toLocaleDateString('pt-BR') : '--'
-      const paidOnBR = payment.paid_at ? new Date(payment.paid_at).toLocaleDateString('pt-BR') : null
+      const paidOnBR = payment.paid_at
+        ? new Date(payment.paid_at).toLocaleDateString('pt-BR')
+        : null
       const monthLabel = payment.month ? ymToLabel(payment.month) : payment.monthLabel || ''
       return { ...payment, label, dueBR, paidOnBR, monthLabel }
     })
-  }, [payments])
+  }, [payments]) // [web:650]
 
   const filteredMembers = useMemo(() => {
     const q = searchMember.trim().toLowerCase()
     if (!q) return members
     return members.filter((i) => (i.user_id?.nome || '').toLowerCase().includes(q))
-  }, [members, searchMember])
+  }, [members, searchMember]) // [web:650]
 
   useEffect(() => {
     return () => {
@@ -412,9 +423,9 @@ export default function Financeiro() {
         if (u) URL.revokeObjectURL(u)
       })
     }
-  }, [])
+  }, []) // [web:652]
 
-  
+  // ========== ADMIN VIEW ==========
   if (isAdmin) {
     return (
       <div className="space-y-8">
@@ -487,7 +498,7 @@ export default function Financeiro() {
     )
   }
 
-  
+  // ========== REP/JOG VIEW ==========
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-bold text-gray-900">Financeiro</h1>
@@ -504,7 +515,7 @@ export default function Financeiro() {
         </div>
       )}
 
-      
+      {/* Times */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
         {teams.map((t) => {
           const id = String(t.id || t._id)
@@ -537,7 +548,7 @@ export default function Financeiro() {
         )}
       </div>
 
-      
+      {/* Seletor de mês */}
       <div className="mt-2 flex items-center gap-3">
         <div className="w-52">
           <label className="text-sm text-gray-600">Mês (YYYY-MM)</label>
@@ -568,7 +579,7 @@ export default function Financeiro() {
       {loading ? (
         <div className="text-center py-9">Carregando informações...</div>
       ) : isJog ? (
-        
+        // JOGADOR
         <div className="space-y-4 mt-6">
           {cards.length === 0 && (
             <div className="text-sm text-gray-500">
@@ -680,7 +691,7 @@ export default function Financeiro() {
           })}
         </div>
       ) : (
-        
+        // REPRESENTANTE
         <div
           className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 ${
             isRep ? 'mt-4' : 'mt-6'
@@ -730,8 +741,6 @@ export default function Financeiro() {
           )}
         </div>
       )}
-
-      
 
       {isRep && openMonth && (
         <div className="space-y-3 mt-6">
