@@ -51,6 +51,7 @@ const gameStatsRoute = require("./routes/game_statsRoute.js");
 const gamesRoute = require ("./routes/gamesRoute.js");
 const paymentRoute = require ("./routes/paymentsRoute.js");
 const inviteRoutes = require ("./routes/inviteRoutes.js");
+const adminRoute = require('./routes/adminRoute');
 
 
 app.use('/users', userRoute);
@@ -61,6 +62,7 @@ app.use('/payments', paymentRoute);
 console.log("[index] before mount /invite");
 app.use('/invite', inviteRoutes);
 console.log("[index] after mount /invite");
+app.use('/admin', adminRoute);
 
 
 app.use('/uploads', (req, res, next) => {

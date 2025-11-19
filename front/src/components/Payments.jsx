@@ -137,10 +137,9 @@ export default function Financeiro() {
   }
 
   async function deletarTime(teamId) {
-    const ok = window.confirm('Tem certeza que deseja deletar este time?')
-    if (!ok) return
-    await apiCall(`/admin/teams/${teamId}`, { method: 'DELETE' })
-    setAdminTeams((prev) => prev.filter((t) => t.id !== teamId))
+    if (!window.confirm('Tem certeza que deseja deletar este time?')) return
+    await apiCall(`/admin/teams/${teamId}`, { method: 'DELETE' }) // feito
+    setAdminTeams(ts => ts.filter(t => t.id !== teamId))
     alert('Time deletado!')
     setAdminDetailsOpen(false)
   }
