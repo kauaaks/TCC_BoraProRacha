@@ -124,7 +124,7 @@ export default function Financeiro() {
     setSelectedAdminTeam(team)
     setAdminDetailsOpen(true)
     try {
-      const res = await apiCall(`/admin/teams/${team.id}/finance`)
+      const res = await apiCall(`/admin/teams/${team._id}/finance`)
       setAdminMembers(res?.members || [])
     } catch {
       setAdminMembers([])
@@ -139,7 +139,7 @@ export default function Financeiro() {
   async function deletarTime(teamId) {
     if (!window.confirm('Tem certeza que deseja deletar este time?')) return
     await apiCall(`/admin/teams/${teamId}`, { method: 'DELETE' }) // feito
-    setAdminTeams(ts => ts.filter(t => t.id !== teamId))
+    setAdminTeams(ts => ts.filter(t => t._id !== teamId))
     alert('Time deletado!')
     setAdminDetailsOpen(false)
   }
@@ -435,7 +435,7 @@ export default function Financeiro() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {adminTeams.map((team) => (
               <div
-                key={team.id}
+                key={team._id}
                 className="p-6 bg-white rounded shadow flex flex-col gap-3 border"
               >
                 <div className="font-bold text-lg flex items-center gap-2">
@@ -453,11 +453,11 @@ export default function Financeiro() {
                     <Eye className="w-4 h-4 mr-1" />
                     Detalhes
                   </Button>
-                  <Button variant="outline" onClick={() => emitirAviso(team.id)}>
+                  <Button variant="outline" onClick={() => emitirAviso(team._id)}>
                     <Bell className="w-4 h-4 mr-1" />
                     Aviso
                   </Button>
-                  <Button variant="destructive" onClick={() => deletarTime(team.id)}>
+                  <Button variant="destructive" onClick={() => deletarTime(team._id)}>
                     <Trash className="w-4 h-4 mr-1" />
                     Deletar
                   </Button>

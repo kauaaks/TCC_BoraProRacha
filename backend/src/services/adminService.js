@@ -86,7 +86,7 @@ async function notifyTeam(teamId) {
 }
 
 async function deleteTeamAsAdmin(teamId) {
-  return await teamService.deleteTeam(teamId);
+  return await teamService.deletarTime(teamId);
 }
 
 module.exports = {
