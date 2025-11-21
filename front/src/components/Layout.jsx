@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import logoImg from '@/assets/logo6.png';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -131,7 +132,7 @@ export default function Layout({ children }) {
       
       <div className="flex items-center space-x-3 p-6 border-b">
         <div className="w-10 h-10 bg-gradient-to-br from-appsociety-green to-appsociety-blue rounded-lg flex items-center justify-center">
-          <Users className="w-6 h-6 text-white" />
+          <img src={logoImg} alt="Logo da Aplicação" className="w-8 h-8 object-cover rounded-full" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">BoraProRacha</h1>
@@ -226,9 +227,9 @@ export default function Layout({ children }) {
             </Sheet>
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-appsociety-green to-appsociety-blue rounded-lg flex items-center justify-center">
-                <Users className="w-4 h-4 text-white" />
+                <img src={logoImg} alt="Logo da Aplicação" className="w-8 h-8 object-cover rounded-full" />
               </div>
-              <h1 className="text-lg font-bold text-gray-900">BoraProRacha,</h1>
+              <h1 className="text-lg font-bold text-gray-900">BoraProRacha</h1>
             </div>
           </div>
 
