@@ -11,8 +11,21 @@ import { Eye, EyeOff, Users, Shield, X } from 'lucide-react'
 import logoImg from '../assets/logo6.png'
 import './Login.css'
 
+// VALIDAÇÃO DE SENHA FORTE
+function validarSenhaForte(senha) {
+  const regras = [
+    { regex: /.{8,}/, msg: "Mínimo de 8 caracteres" },
+    { regex: /[A-Z]/, msg: "Ao menos uma letra maiúscula" },
+    { regex: /[a-z]/, msg: "Ao menos uma letra minúscula" },
+    { regex: /[0-9]/, msg: "Ao menos um número" },
+    { regex: /[!@#$%^&*(),.?\":{}|<>]/, msg: "Ao menos um símbolo" },
+  ];
+  const mensagensErro = regras.filter(r => !r.regex.test(senha)).map(r => r.msg);
+  return { valido: mensagensErro.length === 0, erros: mensagensErro };
+}
+
 export default function Login() {
-  const { login, register } = useAuth()
+  const { login, register, resetPassword } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -35,6 +48,14 @@ export default function Login() {
     user_type: 'jogador'
   })
 
+  // Estado para feedback da senha
+  const [senhaFeedback, setSenhaFeedback] = useState({ valido: false, erros: [] });
+
+  // Estados do modal "Esqueceu a senha"
+  const [isForgotOpen, setIsForgotOpen] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotMessage, setForgotMessage] = useState('')
+
   const userTypeOptions = [
     { value: 'jogador', label: 'Jogador', icon: Users },
     { value: 'representante_time', label: 'Representante de Time', icon: Shield },
@@ -46,13 +67,10 @@ export default function Login() {
     e.preventDefault()
     setIsLoading(true)
     setError('')
-
     const result = await login(loginData.email, loginData.password)
-    
     if (!result.success) {
       setError(result.error)
     }
-    
     setIsLoading(false)
   }
 
@@ -64,66 +82,99 @@ export default function Login() {
 
     const { email, password, name, phone, user_type } = registerData
 
-  try {
-    // Ajuste os nomes dos campos para o backend
-    const result = await register({
-      email,
-      password,          // senha vai pro Firebase
-      nome: name,        // 'name' -> 'nome'
-      telefone: phone,   // 'phone' -> 'telefone'
-      user_type          // já vem correto do select
-    })
-
-    if (!result.success) {
-      setError(result.error)
+    if (!senhaFeedback.valido) {
+      setError("A senha não atende aos requisitos de segurança!")
+      setIsLoading(false)
+      return;
     }
 
-  } catch (err) {
-    setError(err.message)
+    try {
+      const result = await register({
+        email,
+        password,
+        nome: name,
+        telefone: phone,
+        user_type
+      })
+
+      if (!result.success) {
+        setError(result.error)
+      }
+    } catch (err) {
+      setError(err.message)
+    }
+    setIsLoading(false)
   }
 
-  setIsLoading(false)
-}
+  // Handler do modal "Esqueceu a senha"
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setForgotMessage('');
+    try {
+      const result = await resetPassword(forgotEmail);
+      if (!result.success) setError(result.error);
+      else setForgotMessage('Enviamos um link de redefinição para o seu e-mail!');
+    } catch (err) {
+      setError('Não foi possível enviar o e-mail de redefinição.');
+    }
+    setIsLoading(false);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4 relative">
 
-      {/* Modal de Política de Privacidade */}
-      {showPrivacyModal && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full relative animate-fadeIn max-h-[90vh] overflow-y-auto p-6">
-            <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
-              onClick={() => setShowPrivacyModal(false)}
-            >
-              <X size={24} />
-            </button>
-            <PrivacyPolicyContent />
-            <div className="text-right mt-6">
-              <Button onClick={() => setShowPrivacyModal(false)}>Fechar</Button>
+      {/* Modal "Esqueceu a senha" */}
+      {isForgotOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 transition-all fade-in">
+          <Card className="w-full max-w-sm shadow-2xl border-0 p-8 fade-in">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-bold text-xl text-appsociety-blue">Redefinir Senha</h2>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="px-2 py-0 text-gray-500 hover:text-appsociety-blue"
+                onClick={() => setIsForgotOpen(false)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
             </div>
-          </div>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <Input
+                type="email"
+                placeholder="seu@email.com"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                required
+                className="h-12"
+              />
+              <Button
+                type="submit"
+                className="w-full h-12 bg-appsociety-blue hover:bg-blue-600 text-white font-semibold"
+                disabled={isLoading || !forgotEmail}
+              >
+                {isLoading ? 'Enviando...' : 'Enviar link de redefinição'}
+              </Button>
+            </form>
+            {forgotMessage && (
+              <Alert variant="success" className="mt-4">
+                <AlertDescription>{forgotMessage}</AlertDescription>
+              </Alert>
+            )}
+            {error && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <p className="text-xs text-gray-600 mt-4 text-center">
+              Informe seu e-mail e enviaremos o link de redefinição.
+            </p>
+          </Card>
         </div>
       )}
 
-      {/* Modal de Termos de Uso */}
-      {showTermsModal && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full relative animate-fadeIn max-h-[90vh] overflow-y-auto p-6">
-            <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
-              onClick={() => setShowTermsModal(false)}
-            >
-              <X size={24} />
-            </button>
-            <TermsOfUseContent />
-            <div className="text-right mt-6">
-              <Button onClick={() => setShowTermsModal(false)}>Fechar</Button>
-            </div>
-          </div>
-        </div>
-      )}
-      
       <div className="w-full max-w-md space-y-6 fade-in">
         {/* Logo e Título */}
         <div className="text-center space-y-4">
@@ -164,7 +215,6 @@ export default function Login() {
                       className="h-12"
                     />
                   </div>
-                  
                   <div className="space-y-2">
                     <Label htmlFor="password">Senha</Label>
                     <div className="relative">
@@ -187,14 +237,26 @@ export default function Login() {
                         {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
                       </Button>
                     </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        className="text-sm text-appsociety-blue hover:underline"
+                        onClick={() => {
+                          setForgotEmail(loginData.email || '');
+                          setIsForgotOpen(true);
+                          setError('');
+                          setForgotMessage('');
+                        }}
+                      >
+                        Esqueceu a senha?
+                      </button>
+                    </div>
                   </div>
-
                   {error && (
                     <Alert variant="destructive">
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
-
                   <Button
                     type="submit"
                     className="w-full h-12 bg-appsociety-green hover:bg-green-600 text-white font-semibold"
@@ -220,7 +282,6 @@ export default function Login() {
                       className="h-12"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="register-email">Email</Label>
                     <Input
@@ -233,7 +294,6 @@ export default function Login() {
                       className="h-12"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="phone">Telefone</Label>
                     <Input
@@ -245,7 +305,6 @@ export default function Login() {
                       className="h-12"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="user_type">Tipo de Usuário</Label>
                     <Select
@@ -267,7 +326,6 @@ export default function Login() {
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="register-password">Senha</Label>
                     <div className="relative">
@@ -276,10 +334,13 @@ export default function Login() {
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Crie uma senha segura"
                         value={registerData.password || ''}
-                        onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                        onChange={(e) => {
+                          const senha = e.target.value;
+                          setRegisterData({ ...registerData, password: senha });
+                          setSenhaFeedback(validarSenhaForte(senha));
+                        }}
                         required
                         className="h-12 pr-10"
-                        minLength={6}
                       />
                       <Button
                         type="button"
@@ -291,18 +352,21 @@ export default function Login() {
                         {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
                       </Button>
                     </div>
+                    {registerData.password.length > 0 && !senhaFeedback.valido && (
+                      <ul className="text-red-700 text-xs mt-2 mb-2">
+                        {senhaFeedback.erros.map((erro, i) => <li key={i}>{erro}</li>)}
+                      </ul>
+                    )}
                   </div>
-
                   {error && (
                     <Alert variant="destructive">
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
-
                   <Button
                     type="submit"
                     className="w-full h-12 bg-appsociety-blue hover:bg-blue-600 text-white font-semibold"
-                    disabled={isLoading}
+                    disabled={isLoading || !senhaFeedback.valido}
                   >
                     {isLoading ? 'Criando conta...' : 'Criar Conta'}
                   </Button>
@@ -312,7 +376,7 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        {/* Links para Termos e Política */}
+        {/* Links para Termos e Política mantidos */}
         <div className="text-center text-sm text-white">
           <p>Ao criar uma conta, você concorda com nossos</p>
           <p>
@@ -337,7 +401,6 @@ export default function Login() {
     </div>
   )
 }
-
 // Componente de Política de Privacidade dentro do modal
 function PrivacyPolicyContent() {
   return (

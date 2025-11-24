@@ -1,110 +1,108 @@
-import { useState } from 'react'
-import { useAuth } from '../contexts/AuthContext'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import logoImg from '@/assets/logo6.png';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu'
-import { 
-  Home, 
-  Users, 
-  Calendar, 
-  CreditCard, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
+  Home,
+  Users,
+  Calendar,
+  CreditCard,
   BarChart3,
-  Wallet, 
-  Settings, 
-  LogOut, 
+  Wallet,
+  Settings,
+  LogOut,
   Menu,
   MapPin,
-  Shield
-} from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
-
+  Shield,
+} from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Layout({ children }) {
-  const { user, logout } = useAuth()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const location = useLocation()
-  const navigate = useNavigate()
+  const { user, logout } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-
-  const nomeVisivel = (user?.nome || user?.displayName || user?.name || '').trim()
-
+  const nomeVisivel = (user?.nome || user?.displayName || user?.name || '').trim();
 
   const getNavigationItems = () => {
-    if (!user) return []
+    if (!user) return [];
 
-    const userType = user.user_type
+    const userType = user.user_type;
 
     const common = [
       { name: 'Dashboard', href: '/dashboard', icon: Home },
       { name: 'Jogos', href: '/games', icon: Calendar },
       { name: 'Estatísticas', href: '/stats', icon: BarChart3 },
-      { name: 'Times', href:'/teams', icon: Users },
-      { name: 'Financeiro', href: '/payments', icon: Wallet }
-    ]
+      { name: 'Times', href: '/teams', icon: Users },
+      { name: 'Financeiro', href: '/payments', icon: Wallet },
+    ];
 
-    const filteredCommon = common.filter(item => {
-      if (item.name === 'Times') {
-        return !(userType === 'jogador' || userType === 'representante_time')
-      }
-      return true
-    })
-
+    // Admin: remover 'Jogos' e 'Times'
     if (userType === 'admin') {
+      const filteredCommon = common.filter(
+        item => item.name !== 'Jogos' && item.name !== 'Times'
+      );
       return [
         ...filteredCommon,
         { name: 'Administração', href: '/admin', icon: Shield }
-      ]
+      ];
     }
+
+    // Outros perfis: filtro já existente
+    const filteredCommon = common.filter(item => {
+      if (item.name === 'Times') {
+        return !(userType === 'jogador' || userType === 'representante_time');
+      }
+      return true;
+    });
 
     if (userType === 'gestor_campo') {
       return [
         ...filteredCommon,
         { name: 'Meus Campos', href: '/fields', icon: MapPin }
-      ]
+      ];
     }
 
     if (userType === 'representante_time') {
       return [
         ...filteredCommon,
         { name: 'Meus Times', href: '/my-team', icon: Users }
-      ]
+      ];
     }
 
     if (userType === 'jogador') {
       return [
         ...filteredCommon,
         { name: 'Meus Times', href: '/my-team', icon: Users }
-      ]
+      ];
     }
 
-    return filteredCommon
-  }
+    return filteredCommon;
+  };
 
-
-  const navigationItems = getNavigationItems()
-
+  const navigationItems = getNavigationItems();
 
   const handleNavigation = (href) => {
-    navigate(href)
-    setIsMobileMenuOpen(false)
-  }
-
+    navigate(href);
+    setIsMobileMenuOpen(false);
+  };
 
   const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
-
+    logout();
+    navigate('/login');
+  };
 
   const getUserInitials = (name) => {
     return name
@@ -112,9 +110,8 @@ export default function Layout({ children }) {
       .map(word => word[0])
       .join('')
       .toUpperCase()
-      .slice(0, 2) || 'U'
-  }
-
+      .slice(0, 2) || 'U';
+  };
 
   const getUserTypeLabel = (userType) => {
     const types = {
@@ -122,14 +119,12 @@ export default function Layout({ children }) {
       'gestor_campo': 'Gestor de Campo',
       'representante_time': 'Representante',
       'jogador': 'Jogador'
-    }
-    return types[userType] || 'Usuário'
-  }
-
+    };
+    return types[userType] || 'Usuário';
+  };
 
   const SidebarContent = ({ isMobile = false }) => (
     <div className="flex flex-col h-full">
-      
       <div className="flex items-center space-x-3 p-6 border-b">
         <div className="w-10 h-10 bg-gradient-to-br from-appsociety-green to-appsociety-blue rounded-lg flex items-center justify-center">
           <img src={logoImg} alt="Logo da Aplicação" className="w-8 h-8 object-cover rounded-full" />
@@ -142,17 +137,16 @@ export default function Layout({ children }) {
         </div>
       </div>
 
-      
       <nav className="flex-1 p-4 space-y-2">
         {navigationItems.map((item) => {
-          const isActive = location.pathname === item.href
+          const isActive = location.pathname === item.href;
           return (
             <Button
               key={item.name}
               variant={isActive ? "default" : "ghost"}
               className={`w-full justify-start h-12 ${
-                isActive 
-                  ? 'bg-primary text-primary-foreground' 
+                isActive
+                  ? 'bg-primary text-primary-foreground'
                   : 'hover:bg-gray-100'
               }`}
               onClick={() => handleNavigation(item.href)}
@@ -160,11 +154,10 @@ export default function Layout({ children }) {
               <item.icon className="w-5 h-5 mr-3" />
               {item.name}
             </Button>
-          )
+          );
         })}
       </nav>
 
-      
       <div className="p-4 border-t">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -196,19 +189,18 @@ export default function Layout({ children }) {
         </DropdownMenu>
       </div>
     </div>
-  )
-
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
-      
+      {/* Sidebar desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200 shadow-sm">
           <SidebarContent />
         </div>
       </div>
 
-      
+      {/* Mobile bar */}
       <div className="lg:hidden">
         <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
           <div className="flex items-center space-x-3">
@@ -219,9 +211,9 @@ export default function Layout({ children }) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
-                  <VisuallyHidden>
-                    <SheetTitle>Menu de navegação</SheetTitle>
-                  </VisuallyHidden>
+                <VisuallyHidden>
+                  <SheetTitle>Menu de navegação</SheetTitle>
+                </VisuallyHidden>
                 <SidebarContent isMobile={true} />
               </SheetContent>
             </Sheet>
@@ -265,7 +257,7 @@ export default function Layout({ children }) {
         </div>
       </div>
 
-      
+      {/* Main content */}
       <div className="lg:pl-72">
         <main className="flex-1">
           <div className="p-4 lg:p-8">
@@ -274,5 +266,5 @@ export default function Layout({ children }) {
         </main>
       </div>
     </div>
-  )
-} 
+  );
+}
