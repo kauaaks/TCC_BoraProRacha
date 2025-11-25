@@ -5,7 +5,8 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   getIdToken,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { auth } from "../services/ConfigFirebase";
 
@@ -141,6 +142,27 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const resetPassword = async (email) => {
+  try {
+    const actionCodeSettings = {
+      url: "http://localhost:5173/login", // Troque para a URL real do seu app!
+      handleCodeInApp: true
+    };
+    await sendPasswordResetEmail(auth, email, actionCodeSettings);
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao enviar redefinição de senha:", error);
+    if (error.code === 'auth/user-not-found') {
+      return { success: false, error: "E-mail não cadastrado." };
+    }
+    if (error.code === 'auth/invalid-email') {
+      return { success: false, error: "E-mail inválido." };
+    }
+    return { success: false, error: "Erro ao enviar e-mail de redefinição." };
+  }
+};
+
+
 
   const logout = async () => {
     try {
@@ -218,6 +240,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     register,
+    resetPassword,
     logout,
     apiCall,
     setUser,        

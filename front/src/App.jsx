@@ -14,7 +14,7 @@ import Payments from './components/Payments'
 import Stats from './components/Stats'
 import Profile from './pages/Profile'
 import JoinTeam from './pages/invitations/join'
-import PrivacyPolicy from './pages/PrivacyPolicy';
+import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfUse from './pages/TermsOfUse';  
 
 
@@ -156,9 +156,7 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
-    </Routes>
-
-      
+    </Routes>     
   )
 }
 

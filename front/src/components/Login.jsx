@@ -69,7 +69,11 @@ export default function Login() {
     setError('')
     const result = await login(loginData.email, loginData.password)
     if (!result.success) {
-      setError(result.error)
+      if (result.error?.includes('auth/invalid-credential')){
+        setError('E-mail ou senha incorretos');
+      } else {
+        setError('Erro desconhecido ao fazer login');
+      }
     }
     setIsLoading(false)
   }
@@ -130,7 +134,7 @@ export default function Login() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 transition-all fade-in">
           <Card className="w-full max-w-sm shadow-2xl border-0 p-8 fade-in">
             <div className="flex justify-between items-center mb-3">
-              <h2 className="font-bold text-xl text-appsociety-blue">Redefinir Senha</h2>
+              <h2 className="font-bold text-xl text-appsociety-green">Redefinir Senha</h2>
               <Button
                 type="button"
                 variant="ghost"
@@ -152,7 +156,7 @@ export default function Login() {
               />
               <Button
                 type="submit"
-                className="w-full h-12 bg-appsociety-blue hover:bg-blue-600 text-white font-semibold"
+                className="w-full h-12 bg-appsociety-green hover:bg-green-600 text-white font-semibold"
                 disabled={isLoading || !forgotEmail}
               >
                 {isLoading ? 'Enviando...' : 'Enviar link de redefinição'}
@@ -365,7 +369,7 @@ export default function Login() {
                   )}
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-appsociety-blue hover:bg-blue-600 text-white font-semibold"
+                    className="w-full h-12 bg-appsociety-green hover:bg-green-600 text-white font-semibold"
                     disabled={isLoading || !senhaFeedback.valido}
                   >
                     {isLoading ? 'Criando conta...' : 'Criar Conta'}
