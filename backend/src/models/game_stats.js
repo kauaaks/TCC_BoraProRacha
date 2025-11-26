@@ -7,20 +7,14 @@ const game_statsSchema = new mongoose.Schema(
       ref: "Jogos",
       required: true,
     },
-
-    // Jogador dono da estatística (sempre firebaseUid)
     firebaseUid: {
       type: String,
       required: true,
     },
-
-    // Estatísticas simples por jogo
     goals: { type: Number, default: 0 },
     assists: { type: Number, default: 0 },
-
-    // Controle de origem/validação
-    from_player: { type: Boolean, default: true },      // true se foi o jogador que enviou
-    confirmed_by_rep: { type: Boolean, default: false } // true quando o representante confirmar
+    from_player: { type: Boolean, default: true },      
+    confirmed_by_rep: { type: Boolean, default: false } 
   },
   { timestamps: true }
 );

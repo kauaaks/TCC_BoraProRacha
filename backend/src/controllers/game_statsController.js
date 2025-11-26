@@ -1,6 +1,5 @@
 const gameStatService = require('../services/gameStatService');
 
-// Lista TODAS as estatísticas individuais de jogos
 async function listarStatusDeJogos(req, res) {
   try {
     const gameStats = await gameStatService.listarStatusDeJogos();
@@ -10,7 +9,6 @@ async function listarStatusDeJogos(req, res) {
   }
 }
 
-// Busca uma estatística de jogo específica pelo ID do documento
 async function buscarStatusDeJogo(req, res) {
   try {
     const gameStat = await gameStatService.buscarStatusDeJogo(req.params.id);
@@ -20,7 +18,6 @@ async function buscarStatusDeJogo(req, res) {
   }
 }
 
-// Cria nova estatística de jogo (ou atualiza se já existir)
 async function criarStatusDeJogo(req, res) {
   try {
     const newGameStat = await gameStatService.criarStatusDeJogo(req.body, req.user);
@@ -30,7 +27,6 @@ async function criarStatusDeJogo(req, res) {
   }
 }
 
-// Atualiza uma estatística de jogo existente por ID
 async function atualizarStatusDeJogo(req, res) {
   try {
     const updatedGameStat = await gameStatService.atualizarStatusDeJogo(
@@ -43,7 +39,6 @@ async function atualizarStatusDeJogo(req, res) {
   }
 }
 
-// Deleta uma estatística de jogo específica
 async function deletarGameStat(req, res) {
   try {
     const deletedGameStat = await gameStatService.deletarStatusDeJogo(req.params.id);
@@ -53,7 +48,6 @@ async function deletarGameStat(req, res) {
   }
 }
 
-// Obtém as estatísticas GERAIS de um jogo específico
 async function getGameStats(req, res) {
   try {
     const { game_id } = req.params;

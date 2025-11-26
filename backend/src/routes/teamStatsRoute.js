@@ -4,7 +4,6 @@ const router = express.Router();
 const teamStatsController = require("../controllers/teamStatsController");
 const { verifyFirebaseToken } = require("../middlewares/verifyFirebaseToken");
 
-// estatísticas agregadas do time
 router.get("/:teamId", verifyFirebaseToken, teamStatsController.getTeamStats);
 
 module.exports = router;

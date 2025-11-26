@@ -1,7 +1,6 @@
 const games = require('../models/games');
 const Times = require('../models/teams');
 
-// helper de permissão centralizado na service
 function isRepOfTeam(uid, time) {
   if (time.created_by.uid === uid && time.created_by.user_type === 'representante_time') return true;
   if (Array.isArray(time.members)) {
@@ -11,7 +10,6 @@ function isRepOfTeam(uid, time) {
 }
 
 async function listarJogosDoRepresentante(uid) {
-  // Retorna todos jogos; filtro fino pode ser feito depois se precisar
   return await games.find();
 }
 
@@ -22,7 +20,6 @@ async function buscarJogo(id) {
 }
 
 async function criarJogo({ teams_id, field_id, scheduled_date, duration, invited_by }) {
-  // Status sempre começa como 'pendente'
   if (!teams_id || !field_id || !scheduled_date || !duration || !invited_by) {
     throw new Error("preencha todos os campos obrigatórios.");
   }
@@ -45,7 +42,6 @@ async function criarJogo({ teams_id, field_id, scheduled_date, duration, invited
     accepted_by: null,
     cancelled_by: null,
     finished_by: [],
-    // garante campos de resultado inicializados
     goals_team1: 0,
     goals_team2: 0,
     winner_team_id: null
@@ -74,11 +70,6 @@ async function cancelarJogo(jogoId, uid) {
   return jogo;
 }
 
-/**
- * NOVO: definir resultado do jogo (gols + vencedor/empate)
- * - winner_team_id pode ser null para empate
- * - só representantes de um dos times podem chamar
- */
 async function definirResultado(jogoId, uid, { goals_team1, goals_team2, winner_team_id }) {
   const jogo = await games.findById(jogoId);
   if (!jogo) throw new Error("jogo não encontrado.");
@@ -87,7 +78,6 @@ async function definirResultado(jogoId, uid, { goals_team1, goals_team2, winner_
     throw new Error("Somente jogos aceitos podem ter resultado definido.");
   }
 
-  // checa se uid é representante de algum dos times do jogo
   const times = await Times.find({ _id: { $in: jogo.teams_id } });
   const isRep = times.some(t => isRepOfTeam(uid, t));
   if (!isRep) {
@@ -110,7 +100,6 @@ async function definirResultado(jogoId, uid, { goals_team1, goals_team2, winner_
     }
     jogo.winner_team_id = winner_team_id;
   } else {
-    // empate
     jogo.winner_team_id = null;
   }
 
@@ -124,15 +113,12 @@ async function marcarTerminado(jogoId, uid) {
   if (jogo.status !== 'aceito' && jogo.status !== 'terminado')
     throw new Error("Somente jogos aceitos podem ser terminados.");
 
-  // NOVO: obriga ter resultado antes de finalizar
   if (jogo.goals_team1 == null || jogo.goals_team2 == null) {
     throw new Error("Defina o resultado do jogo antes de marcar como terminado.");
   }
 
-  // Marca o representante como quem confirmou terminado, se não estiver na lista ainda
   if (!jogo.finished_by.includes(uid)) jogo.finished_by.push(uid);
 
-  // Checa se ambos representantes já marcaram terminado
   const times = await Times.find({ _id: { $in: jogo.teams_id } });
   const repUids = [];
   for (const t of times) {
@@ -160,7 +146,7 @@ async function listarJogosPorStatus(uid, status, teamId) {
 
   const jogos = await games
     .find(query)
-    .populate('teams_id', 'nome') // pega nome dos times
+    .populate('teams_id', 'nome') 
     .lean();
 
   return jogos.map(j => {
@@ -168,7 +154,6 @@ async function listarJogosPorStatus(uid, status, teamId) {
     return {
       ...j,
       teams_names: teams.map(t => t.nome || 'Time'),
-      // se o uid logado é diferente de quem convidou, ele é o convidado
       i_am_invited: j.invited_by && j.invited_by !== uid
     };
   });
@@ -182,5 +167,5 @@ module.exports = {
   cancelarJogo,
   marcarTerminado,
   listarJogosPorStatus,
-  definirResultado // novo
+  definirResultado 
 };

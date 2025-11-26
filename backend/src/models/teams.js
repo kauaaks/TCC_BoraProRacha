@@ -23,8 +23,6 @@ const teamsSchema = new mongoose.Schema(
           required: true,
           enum: ["admin", "representante_time", "gestor_campo", "jogador"],
         },
-        // NOVO: posição do jogador neste time
-        // para admin/representante/gestor pode ficar undefined
         position: {
           type: String,
           enum: ["goleiro", "zagueiro", "lateral", "volante", "meia", "atacante"],
@@ -32,8 +30,6 @@ const teamsSchema = new mongoose.Schema(
         },
       },
     ],
-
-    // data de referência para o próximo pagamento
     next_payment_date: { type: Date, required: true },
   },
   { timestamps: true }

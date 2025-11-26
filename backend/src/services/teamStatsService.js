@@ -4,9 +4,9 @@ const Jogos = require("../models/games");
 const GameStats = require("../models/game_stats");
 const User = require("../models/user");
 
-// Agrupa vitórias por mês/ano
+
 function buildWinsByMonth(games, teamId) {
-  const map = new Map(); // chave "YYYY-MM" -> { year, month, wins }
+  const map = new Map(); 
 
   games.forEach(g => {
     if (!g.winner_team_id) return;
@@ -29,7 +29,6 @@ function buildWinsByMonth(games, teamId) {
     );
 }
 
-// Estatísticas agregadas de um time
 async function getTeamStats(teamId) {
   if (!mongoose.Types.ObjectId.isValid(teamId)) {
     throw new Error("ID de time inválido.");
@@ -40,14 +39,12 @@ async function getTeamStats(teamId) {
     throw new Error("Time não encontrado.");
   }
 
-  // jogadores = apenas members com user_type 'jogador'
   const playerMembers = (team.members || []).filter(
   (m) => m.user_type === "jogador" || m.user_type === "representante_time"
     );
     const playerUids = playerMembers.map((m) => m.uid);
     const playersCount = playerMembers.length;
 
-  // Jogos desse time (exceto cancelados)
   const games = await Jogos.find({
     teams_id: teamId,
     status: { $ne: "cancelado" }
@@ -55,14 +52,12 @@ async function getTeamStats(teamId) {
 
   const matchesCount = games.length;
 
-  // Vitórias desse time (usando winner_team_id)
   const winsCount = games.filter(
     g => g.winner_team_id && String(g.winner_team_id) === String(teamId)
   ).length;
 
   const winsByMonth = buildWinsByMonth(games, teamId);
 
-  // Estatísticas individuais (usando EstatisticasDeJogos)
   const gameIds = games.map(g => g._id);
 
   let playerStats = [];
@@ -72,7 +67,7 @@ async function getTeamStats(teamId) {
       firebaseUid: { $in: playerUids }
     }).lean();
 
-    const agg = new Map(); // uid -> { goals, assists, matches }
+    const agg = new Map(); 
 
     statsDocs.forEach(s => {
       const uid = s.firebaseUid;
@@ -103,8 +98,7 @@ async function getTeamStats(teamId) {
     playerStats.sort((a, b) => b.goals - a.goals || b.assists - a.assists);
   }
 
-  // Distribuição por posição usando team.members[position]
-  const posCounts = new Map(); // posição -> count
+  const posCounts = new Map();
   playerMembers.forEach((m) => {
     const pos = m.position || "sem_posicao";
     posCounts.set(pos, (posCounts.get(pos) || 0) + 1);
@@ -127,7 +121,6 @@ async function getTeamStats(teamId) {
     })
   );
 
-  // Alertas ainda não existem na base -> lista vazia
   const alerts = [];
 
   return {

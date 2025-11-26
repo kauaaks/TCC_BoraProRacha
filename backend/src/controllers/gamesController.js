@@ -20,15 +20,12 @@ async function listarJogos(req, res) {
 
 async function criarJogo(req, res) {
   try {
-    // Apenas representante pode criar
     if (req.user.user_type !== 'representante_time')
       return res.status(403).json({ message: "Apenas representantes podem criar jogos" });
 
     const { teams_id } = req.body;
     if (!Array.isArray(teams_id) || teams_id.length !== 2)
       return res.status(400).json({ message: "Informe exatamente 2 times (teams_id)" });
-
-    // Só representante de um dos times pode criar
     const times = await Times.find({ _id: { $in: teams_id } });
     const isRep = times.some(t => isRepOfTeam(req.user.uid, t));
     if (!isRep) return res.status(403).json({ message: "Você não é representante de nenhum desses times" });
@@ -108,10 +105,6 @@ async function listarJogosPorStatus(req, res) {
   }
 }
 
-/**
- * NOVO: definir resultado (gols + vencedor/empate)
- * controller só repassa para a service
- */
 async function definirResultado(req, res) {
   try {
     const { id } = req.params;
@@ -130,11 +123,11 @@ async function definirResultado(req, res) {
 }
 
 module.exports = {
-  listarJogos,        // GET /games
-  criarJogo,          // POST /games
-  aceitarJogo,        // POST /games/:id/accept
-  cancelarJogo,       // POST /games/:id/cancel
-  marcarTerminado,    // POST /games/:id/finish
-  listarJogosPorStatus, // GET /games/status
-  definirResultado    // PUT /games/:id/result
+  listarJogos,        
+  criarJogo,         
+  aceitarJogo,        
+  cancelarJogo,       
+  marcarTerminado,   
+  listarJogosPorStatus, 
+  definirResultado    
 };

@@ -1,11 +1,9 @@
-// src/services/playerStatsService.js
 const mongoose = require("mongoose");
 const User = require("../models/user");
 const Times = require("../models/teams");
 const Jogos = require("../models/games");
 const GameStats = require("../models/game_stats");
 
-// helper para agrupar por mês (1-12)
 function initMonths() {
   return Array.from({ length: 12 }, () => 0);
 }
@@ -15,18 +13,15 @@ async function getPlayerStats(firebaseUid) {
     throw new Error("UID do jogador ausente.");
   }
 
-  // perfil básico
   const user = await User.findOne({ firebaseUid }).lean();
   if (!user) throw new Error("Jogador não encontrado.");
 
-  // pega primeiro time onde ele está como jogador ou representante
   const team = await Times.findOne({
     "members.uid": firebaseUid,
   }).lean();
 
   const teamId = team?._id || null;
 
-  // todas as stats desse jogador
   const statsDocs = await GameStats.find({ firebaseUid }).lean();
   const matches = statsDocs.length;
 
@@ -40,7 +35,6 @@ async function getPlayerStats(firebaseUid) {
   if (statsDocs.length) {
     gameIds = statsDocs.map((s) => s.game_id);
 
-    // carregar jogos para pegar mês, adversário e resultado
     const games = await Jogos.find({ _id: { $in: gameIds } }).lean();
     const gameById = new Map(games.map((g) => [String(g._id), g]));
 
@@ -52,14 +46,13 @@ async function getPlayerStats(firebaseUid) {
       assistsTotal += s.assists || 0;
 
       const d = new Date(g.scheduled_date);
-      const monthIndex = d.getMonth(); // 0-11
+      const monthIndex = d.getMonth(); 
 
       golsPorMes[monthIndex] += s.goals || 0;
       assistsPorMes[monthIndex] += s.assists || 0;
     });
   }
 
-  // últimos jogos (ordena por data do jogo)
   let recentGames = [];
   if (gameIds.length) {
     const games = await Jogos.find({ _id: { $in: gameIds } })
@@ -69,7 +62,6 @@ async function getPlayerStats(firebaseUid) {
 
     const gamesById = new Map(games.map((g) => [String(g._id), g]));
 
-    // carregar times para saber adversário
     const allTeamIds = Array.from(
       new Set(
         games.flatMap((g) => (g.teams_id || []).map((id) => String(id)))
@@ -120,7 +112,7 @@ async function getPlayerStats(firebaseUid) {
       .slice(0, 5);
   }
 
-  // ranking de gols no time
+  
   let ranking = [];
   if (teamId) {
     const teamGames = await Jogos.find({
@@ -164,7 +156,7 @@ async function getPlayerStats(firebaseUid) {
       position:
         team?.members?.find((m) => m.uid === firebaseUid)?.position ||
         "Atacante",
-      age: 22, // você pode trocar quando tiver birthDate
+      age: 22, 
       status: user.ativo ? "Ativo" : "Inativo",
     },
     stats: {

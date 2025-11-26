@@ -29,7 +29,6 @@ function formatHour(dateStr) {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
-// helper pra pegar o _id correto do time (populado ou não)
 function getTeamIdFromGame(game, index) {
   const t = (game.teams_id || [])[index]
   return t?._id || t?.id || t || null
@@ -60,7 +59,6 @@ export default function Games() {
     duration: '60',
   })
 
-  // Modal de estatísticas
   const [statsModal, setStatsModal] = useState({
     open: false,
     game: null,
@@ -73,14 +71,13 @@ export default function Games() {
   const [selectedPlayer, setSelectedPlayer] = useState(null)
   const [repStatsForm, setRepStatsForm] = useState({ goals: 0, assists: 0 })
 
-  // Modal de resultado do jogo (gols + vencedor/empate)
   const [resultModal, setResultModal] = useState({
     open: false,
     saving: false,
     game: null,
     team1Goals: '',
     team2Goals: '',
-    winner: null, // 'team1' | 'draw' | 'team2'
+    winner: null, 
   })
 
   // -------- TIMES --------
@@ -233,7 +230,6 @@ export default function Games() {
     }
   }
 
-  // abrir modal para definir resultado antes de finalizar
   function handleFinish(game) {
     if (!game) return
     const team1Goals = game.goals_team1 ?? ''
@@ -268,7 +264,6 @@ export default function Games() {
     })
   }
 
-  // envia resultado (PUT /games/:id/result) e depois finaliza (POST /finish)
   async function confirmFinish() {
     const { game, team1Goals, team2Goals, winner } = resultModal
     if (!game) return
@@ -291,13 +286,11 @@ export default function Games() {
     } else if (winner === 'team2') {
       winner_team_id = getTeamIdFromGame(game, 1)
     }
-    // winner === 'draw' => winner_team_id fica null (empate)
 
     try {
       setResultModal((s) => ({ ...s, saving: true }))
       const token = localStorage.getItem('token')
 
-      // 1) definir resultado
       let res = await fetch(`${API_BASE_URL}/games/${game._id}/result`, {
         method: 'PUT',
         headers: {
@@ -313,7 +306,6 @@ export default function Games() {
       let data = await res.json()
       if (!res.ok) throw new Error(data?.error || 'Erro ao definir resultado do jogo')
 
-      // 2) marcar como terminado (confirmação do representante atual)
       res = await fetch(`${API_BASE_URL}/games/${game._id}/finish`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -329,7 +321,6 @@ export default function Games() {
     }
   }
 
-  // -------- STATS (gamestats) --------
 
   async function openStatsModal(game) {
     if (game.status !== 'terminado') return
@@ -486,7 +477,6 @@ export default function Games() {
     })
   }
 
-  // -------- EFFECTS --------
 
   useEffect(() => {
     fetchTeams()
@@ -496,7 +486,6 @@ export default function Games() {
     if (teamId) fetchGamesByStatus(tab, teamId)
   }, [tab, teamId])
 
-  // -------- RENDER --------
 
   return (
     <div>
@@ -711,7 +700,7 @@ export default function Games() {
         </div>
       )}
 
-      {/* Modal de estatísticas */}
+      
       {statsModal.open && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -895,7 +884,7 @@ export default function Games() {
         </div>
       )}
 
-      {/* Modal de resultado do jogo */}
+      
       {resultModal.open && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-5 w-full max-w-xl">

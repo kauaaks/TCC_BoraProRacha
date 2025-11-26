@@ -1,12 +1,10 @@
 const userService = require("../services/userService");
 
-// GET /users/firebase/:uid
 async function buscarUsuarioPorFirebaseUid(req, res) {
   const { uid } = req.params;
   console.log("[Controller] Buscar usuário por Firebase UID:", uid);
 
   try {
-    // 1) Tenta no Mongo
     let user = await userService.buscarUsuarioPorFirebaseUid(uid);
     if (user) {
       console.log("[Controller] Usuário encontrado:", user);
@@ -15,19 +13,16 @@ async function buscarUsuarioPorFirebaseUid(req, res) {
 
     console.log("[Controller] Usuário não encontrado no Mongo, verificando Firebase...");
 
-    // 2) Tenta no Firebase (UserRecord ou null)
     const firebaseUser = await userService.buscarUsuarioNoFirebase(uid);
     if (!firebaseUser) {
       return res.status(404).json({ error: "Usuário não encontrado nem no Mongo nem no Firebase" });
     }
 
-    // 3) Normaliza campos independentemente do shape retornado pela service
     const firebaseUid = firebaseUser.uid || firebaseUser.firebaseUid || uid;
     const nome = (firebaseUser.displayName || firebaseUser.nome || "Sem nome");
     const telefone = "00000000000";
     const user_type = "jogador";
 
-    // 4) Cria no Mongo com defaults de negócio
     const created = await userService.criarUsuario({
       firebaseUid,
       nome,
@@ -44,7 +39,6 @@ async function buscarUsuarioPorFirebaseUid(req, res) {
   }
 }
 
-// POST /users
 async function criarUsuario(req, res) {
   const { firebaseUid, nome, telefone, user_type } = req.body;
   console.log("[Controller] Criar usuário, body recebido:", req.body);
@@ -82,7 +76,6 @@ async function criarUsuario(req, res) {
   }
 }
 
-// GET /users
 async function listarUsuarios(req, res) {
   try {
     const users = await userService.listarUsuarios();
@@ -93,7 +86,6 @@ async function listarUsuarios(req, res) {
   }
 }
 
-// PATCH /users/me
 async function atualizarUsuarioMe(req, res) {
   try {
     if (!req.user || !req.user.uid) {
@@ -106,7 +98,6 @@ async function atualizarUsuarioMe(req, res) {
   }
 }
 
-// DELETE /users/:id
 async function deletarUsuario(req, res) {
   try {
     const result = await userService.deletarUsuario(req.params.id);
@@ -117,7 +108,6 @@ async function deletarUsuario(req, res) {
   }
 }
 
-// GET /users/:id/stats
 async function getUserStats(req, res) {
   try {
     const stats = await userService.getUserStats(req.params.id);
