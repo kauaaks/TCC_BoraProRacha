@@ -21,7 +21,7 @@ async function listarTimesFinanceiros() {
 
       teamsWithFinance.push({
         team_id: team._id,
-        nome: team.name,
+        nome: team.nome,
         mensalidade: team.monthly_fee,
         total_pago: totalPago,
         total_pendente: totalPendente,

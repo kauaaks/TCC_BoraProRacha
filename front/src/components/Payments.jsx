@@ -433,6 +433,7 @@ export default function Financeiro() {
           <div>Carregando times...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {console.log("ADMIN TEAMS => ", adminTeams)}
             {adminTeams.map((team) => (
               <div
                 key={team._id}
@@ -442,11 +443,11 @@ export default function Financeiro() {
                   <Users className="w-5 h-5" /> {team.nome}
                 </div>
                 <div className="mt-1 text-sm">
-                  Membros: <b>{team.totalMembros}</b>
+                  Membros: <b>{team.total_registros}</b>
                 </div>
                 <div>
-                  Pagos: <span className="text-green-700">{team.pagos}</span> &nbsp;|&nbsp;
-                  Pendentes: <span className="text-red-700">{team.pendentes}</span>
+                  Pagos: <span className="text-green-700">{team.total_pago}</span> &nbsp;|&nbsp;
+                  Pendentes: <span className="text-red-700">{team.total_pendente}</span>
                 </div>
                 <div className="flex gap-2 mt-2">
                   <Button onClick={() => openAdminDetails(team)}>
