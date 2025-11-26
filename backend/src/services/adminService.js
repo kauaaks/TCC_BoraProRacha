@@ -38,7 +38,7 @@ async function listarTimesFinanceiros() {
 
 async function getTeamFinanceById(teamId) {
   // Verifica se o time existe
-  const team = await Team.findById(teamId);
+  const team = await Teams.findById(teamId);
   if (!team) throw new Error("Time não encontrado");
 
   // Buscar membros do time (join manual via populate)
@@ -46,7 +46,7 @@ async function getTeamFinanceById(teamId) {
     .populate("user_id", "nome telefone user_type firebaseUid ativo");
 
   // Buscar pagamentos do time
-  const payments = await Payment.find({ team_id: teamId })
+  const payments = await Payments.find({ team_id: teamId })
     .populate("user_id", "nome user_type")
     .populate("confirmed_by", "nome");
 
@@ -59,7 +59,7 @@ async function getTeamFinanceById(teamId) {
 
 async function notifyTeam(teamId) {
 
-  const team = await Team.findById(teamId);
+  const team = await Teams.findById(teamId);
   if (!team) throw new Error("Time não encontrado");
 
   // Buscar membros
@@ -68,11 +68,13 @@ async function notifyTeam(teamId) {
   if (members.length === 0)
     throw new Error("Este time não possui membros");
 
+  const message = `O time ${team.nome} recebeu um novo aviso administrativo.`;
+
   const notificationsToInsert = members.map(member => ({
     user_id: member.user_id,
     team_id: teamId,
     title: "Aviso do administrador",
-    message: `O time ${team.nome} recebeu um novo aviso administrativo.`,
+    message,
     viewed: false
   }));
 

@@ -31,8 +31,8 @@ async function getTeamFinanceById(req, res) {
 
 async function notifyTeam(req, res) {
   try {
-    const { id } = req.params;
-    const result = await adminService.notifyTeam(id);
+    const { teamId } = req.params;
+    const result = await adminService.notifyTeam(teamId);
 
     res.status(200).json({
       message: "Aviso registrado no sistema",

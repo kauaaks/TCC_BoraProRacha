@@ -454,11 +454,11 @@ export default function Financeiro() {
                     <Eye className="w-4 h-4 mr-1" />
                     Detalhes
                   </Button>
-                  <Button variant="outline" onClick={() => emitirAviso(team._id)}>
+                  <Button variant="outline" onClick={() => emitirAviso(team.team_id)}>
                     <Bell className="w-4 h-4 mr-1" />
                     Aviso
                   </Button>
-                  <Button variant="destructive" onClick={() => deletarTime(team._id)}>
+                  <Button variant="destructive" onClick={() => deletarTime(team.team_id)}>
                     <Trash className="w-4 h-4 mr-1" />
                     Deletar
                   </Button>
