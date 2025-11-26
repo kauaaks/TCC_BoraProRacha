@@ -1,21 +1,21 @@
 const adminService = require("../services/adminService");
 
-
+// GET /admin/teams/finance
 async function listarTimesFinanceiros(req, res) {
   try {
     const dados = await adminService.listarTimesFinanceiros();
 
     res.status(200).json({
       success: true,
-      teams: dados
+      teams: dados,
     });
   } catch (err) {
     console.error("[Controller] Erro em listarTimesFinanceiros:", err);
     res.status(500).json({ error: err.message });
   }
-};
+}
 
-
+// GET /admin/teams/:id/finance
 async function getTeamFinanceById(req, res) {
   try {
     const { id } = req.params;
@@ -29,14 +29,15 @@ async function getTeamFinanceById(req, res) {
   }
 }
 
+// POST /admin/teams/:id/notify
 async function notifyTeam(req, res) {
   try {
-    const { teamId } = req.params;
-    const result = await adminService.notifyTeam(teamId);
+    const { id } = req.params;
+    const result = await adminService.notifyTeam(id);
 
     res.status(200).json({
       message: "Aviso registrado no sistema",
-      result
+      result,
     });
   } catch (err) {
     console.error("[Controller notifyTeam] Erro:", err);
@@ -44,6 +45,7 @@ async function notifyTeam(req, res) {
   }
 }
 
+// DELETE /admin/teams/:id
 async function deleteTeam(req, res) {
   try {
     await adminService.deleteTeamAsAdmin(req.params.id);
@@ -53,10 +55,9 @@ async function deleteTeam(req, res) {
   }
 }
 
-
 module.exports = {
-  getTeamFinanceById,
   listarTimesFinanceiros,
+  getTeamFinanceById,
   notifyTeam,
-  deleteTeam
+  deleteTeam,
 };

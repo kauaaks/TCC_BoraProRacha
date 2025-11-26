@@ -2,16 +2,15 @@ const express = require("express");
 const router = express.Router();
 
 const adminController = require("../controllers/adminController");
-
 const { verifyFirebaseToken } = require("../middlewares/verifyFirebaseToken");
 const { attachUserRole } = require("../middlewares/attachUserRole");
 const { checkRole } = require("../middlewares/checkRole");
 
-// Middlewares agrupados
+// Middlewares agrupados para admin
 const adminAuth = [
   verifyFirebaseToken,
   attachUserRole,
-  checkRole(["admin"])
+  checkRole(["admin"]),
 ];
 
 // GET /admin/teams/finance
@@ -24,28 +23,22 @@ router.get(
 // GET /admin/teams/:id/finance
 router.get(
   "/teams/:id/finance",
-  verifyFirebaseToken,
-  attachUserRole,
-  checkRole(["admin"]),
+  adminAuth,
   adminController.getTeamFinanceById
 );
 
+// POST /admin/teams/:id/notify
 router.post(
   "/teams/:id/notify",
-  verifyFirebaseToken,
-  attachUserRole,
-  checkRole(["admin"]),
+  adminAuth,
   adminController.notifyTeam
 );
 
+// DELETE /admin/teams/:id
 router.delete(
   "/teams/:id",
-  verifyFirebaseToken,
-  attachUserRole,
-  checkRole(["admin"]),
+  adminAuth,
   adminController.deleteTeam
 );
-
-
 
 module.exports = router;

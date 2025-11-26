@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const paymentsSchema = new mongoose.Schema({
-  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true },
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuários', required: true },
   team_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Teams', required: true },
   month: { type: String, required: true }, 
   amount: { type: Number, default: 0 },

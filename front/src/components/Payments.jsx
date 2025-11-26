@@ -30,7 +30,9 @@ const badgeColors = {
 }
 
 const fmtBRL = (v) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v || 0))
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+    Number(v || 0),
+  )
 
 const ymToLabel = (ym) => {
   const [y, m] = ym.split('-').map(Number)
@@ -90,7 +92,11 @@ export default function Financeiro() {
   const [preview, setPreview] = useState({ open: false, src: '', title: '' })
   const [searchMember, setSearchMember] = useState('')
 
-  // CORREÇÃO: limpar estado quando trocar de time (evita dados do time anterior)
+  // avisos do admin para o representante
+  const [warnings, setWarnings] = useState([])
+  const [warningsLoading, setWarningsLoading] = useState(false)
+
+  // limpar estado quando trocar de time
   useEffect(() => {
     if (!teamId) return
     setOpenMonth('')
@@ -101,7 +107,7 @@ export default function Financeiro() {
     setPreviewMap({})
     setUploading({})
     setPreview({ open: false, src: '', title: '' })
-  }, [teamId]) // [web:652][web:649]
+  }, [teamId])
 
   // ========== ADMIN ==========
   useEffect(() => {
@@ -118,7 +124,7 @@ export default function Financeiro() {
       }
     }
     fetchTeams()
-  }, [isAdmin, apiCall]) // [web:649]
+  }, [isAdmin, apiCall])
 
   async function openAdminDetails(team) {
     setSelectedAdminTeam(team)
@@ -138,8 +144,8 @@ export default function Financeiro() {
 
   async function deletarTime(teamId) {
     if (!window.confirm('Tem certeza que deseja deletar este time?')) return
-    await apiCall(`/admin/teams/${teamId}`, { method: 'DELETE' }) // feito
-    setAdminTeams(ts => ts.filter(t => t._id !== teamId))
+    await apiCall(`/admin/teams/${teamId}`, { method: 'DELETE' })
+    setAdminTeams((ts) => ts.filter((t) => t._id !== teamId))
     alert('Time deletado!')
     setAdminDetailsOpen(false)
   }
@@ -189,7 +195,7 @@ export default function Financeiro() {
         setTeams([])
       }
     })()
-  }, [isRep, isJog, user?.uid, apiCall]) // [web:649]
+  }, [isRep, isJog, user?.uid, apiCall])
 
   const fetchMonthRange = async (id) => {
     if (!id) {
@@ -239,7 +245,37 @@ export default function Financeiro() {
     if (!isRep && !isJog) return
     if (!teamId) return
     fetchMonthRange(teamId)
-  }, [teamId, isRep, isJog]) // [web:649]
+  }, [teamId, isRep, isJog])
+
+  // carregar avisos quando o representante troca de time
+  useEffect(() => {
+    if (!isRep) return
+    if (!teamId) {
+      setWarnings([])
+      return
+    }
+
+    let cancelled = false
+
+    async function loadWarnings() {
+      try {
+        setWarningsLoading(true)
+        const res = await apiCall(`/notifications/team/${teamId}`)
+        if (cancelled) return
+        const items = Array.isArray(res?.items) ? res.items : []
+        setWarnings(items)
+      } catch {
+        if (!cancelled) setWarnings([])
+      } finally {
+        if (!cancelled) setWarningsLoading(false)
+      }
+    }
+
+    loadWarnings()
+    return () => {
+      cancelled = true
+    }
+  }, [isRep, teamId, apiCall])
 
   const loadCycles = async (signal) => {
     setLoading(true)
@@ -284,7 +320,7 @@ export default function Financeiro() {
     setLoading(true)
     loadCycles(controller.signal)
     return () => controller.abort()
-  }, [teamId, month, apiCall, rangeReady, isRep, isJog]) // [web:649]
+  }, [teamId, month, apiCall, rangeReady, isRep, isJog])
 
   const isValidImage = (file) => file && /^image\/(png|jpe?g|webp)$/i.test(file.type)
   const isSmallEnough = (file, maxMB = 8) => file && file.size <= maxMB * 1024 * 1024
@@ -408,13 +444,13 @@ export default function Financeiro() {
       const monthLabel = payment.month ? ymToLabel(payment.month) : payment.monthLabel || ''
       return { ...payment, label, dueBR, paidOnBR, monthLabel }
     })
-  }, [payments]) // [web:650]
+  }, [payments])
 
   const filteredMembers = useMemo(() => {
     const q = searchMember.trim().toLowerCase()
     if (!q) return members
     return members.filter((i) => (i.user_id?.nome || '').toLowerCase().includes(q))
-  }, [members, searchMember]) // [web:650]
+  }, [members, searchMember])
 
   useEffect(() => {
     return () => {
@@ -422,7 +458,7 @@ export default function Financeiro() {
         if (u) URL.revokeObjectURL(u)
       })
     }
-  }, []) // [web:652]
+  }, [])
 
   // ========== ADMIN VIEW ==========
   if (isAdmin) {
@@ -433,7 +469,7 @@ export default function Financeiro() {
           <div>Carregando times...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {console.log("ADMIN TEAMS => ", adminTeams)}
+            {console.log('ADMIN TEAMS => ', adminTeams)}
             {adminTeams.map((team) => (
               <div
                 key={team._id}
@@ -447,7 +483,8 @@ export default function Financeiro() {
                 </div>
                 <div>
                   Pagos: <span className="text-green-700">{team.total_pago}</span> &nbsp;|&nbsp;
-                  Pendentes: <span className="text-red-700">{team.total_pendente}</span>
+                  Não pagos:{' '}
+                  <span className="text-red-700">{team.total_pendente}</span>
                 </div>
                 <div className="flex gap-2 mt-2">
                   <Button onClick={() => openAdminDetails(team)}>
@@ -508,10 +545,33 @@ export default function Financeiro() {
           : 'Selecione um time, escolha o mês e envie o comprovante.'}
       </p>
 
+      {/* Avisos para representante */}
+      {isRep && (
+        <div className="mt-3">
+          {warningsLoading ? (
+            <div className="text-sm text-gray-500">Carregando avisos...</div>
+          ) : warnings.length === 0 ? null : (
+            <div className="space-y-2">
+              {warnings.map((w) => (
+                <div
+                  key={w.id}
+                  className="bg-orange-50 border-l-4 border-orange-500 px-3 py-2 rounded text-sm text-orange-900"
+                >
+                  <div className="font-semibold">
+                    {w.title || 'Aviso do administrador'}
+                  </div>
+                  <div>{w.message}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {isJog && (
         <div className="mb-3 bg-blue-50 border-l-4 border-blue-400 p-3 rounded text-blue-900">
-          Envie o comprovante da mensalidade assim que efetuar o pagamento. Só o representante tem
-          acesso à sua imagem!
+          Envie o comprovante da mensalidade assim que efetuar o pagamento. Só o
+          representante tem acesso à sua imagem!
         </div>
       )}
 
@@ -612,8 +672,7 @@ export default function Financeiro() {
                     : '--'}
                 </div>
                 <div className="text-gray-700 text-sm">
-                  Valor:{' '}
-                  <span className="font-medium">{fmtBRL(payment.amount)}</span>
+                  Valor: <span className="font-medium">{fmtBRL(payment.amount)}</span>
                 </div>
 
                 <div className="mt-1">
@@ -724,8 +783,7 @@ export default function Financeiro() {
                   : '--'}
               </div>
               <div className="text-gray-700 text-sm">
-                Valor:{' '}
-                <span className="font-medium">{fmtBRL(payment.amount)}</span>
+                Valor: <span className="font-medium">{fmtBRL(payment.amount)}</span>
               </div>
               {payment.label === 'Pago' && payment.paidOnBR && (
                 <div className="text-green-600 text-xs">

@@ -1,12 +1,11 @@
 const Payments = require("../models/payments");
 const Teams = require("../models/teams");
-const Users = require("../models/user");
 const TeamMember = require("../models/team_members");
 const Notification = require("../models/notification");
 const teamService = require("./teamService");
+const Users = require("../models/user");
 
-
-  // 🔹 Busca todos os times com informações financeiras
+// 🔹 Lista todos os times com resumo financeiro (cards do admin)
 async function listarTimesFinanceiros() {
   try {
     const teams = await Teams.find().lean();
@@ -16,11 +15,12 @@ async function listarTimesFinanceiros() {
     for (const team of teams) {
       const pagamentos = await Payments.find({ team_id: team._id }).lean();
 
-      const totalPago = pagamentos.filter(p => p.status === "paid").length;
-      const totalPendente = pagamentos.filter(p => p.status === "pending").length;
+      const totalPago = pagamentos.filter((p) => p.status === "paid").length;
+      const totalPendente = pagamentos.filter(p => p.status === "unpaid").length;
 
       teamsWithFinance.push({
-        team_id: team._id,
+        _id: team._id,             // usado no front para Detalhes
+        team_id: team._id,         // usado no front para Aviso / Deletar
         nome: team.nome,
         mensalidade: team.monthly_fee,
         total_pago: totalPago,
@@ -34,66 +34,119 @@ async function listarTimesFinanceiros() {
     console.error("[Service] Erro ao listar times financeiros:", err);
     throw new Error("Erro ao carregar dados financeiros");
   }
-};
+}
 
+// 🔹 Detalhes financeiros de um time (modal: membros Pago / Não pago)
+// Usa Payments + populate em user_id para montar a lista de membros com status agregado.
 async function getTeamFinanceById(teamId) {
-  // Verifica se o time existe
-  const team = await Teams.findById(teamId);
+  const team = await Teams.findById(teamId).lean();
   if (!team) throw new Error("Time não encontrado");
 
-  // Buscar membros do time (join manual via populate)
-  const members = await TeamMember.find({ team_id: teamId })
-    .populate("user_id", "nome telefone user_type firebaseUid ativo");
-
-  // Buscar pagamentos do time
+  // todos os pagamentos desse time, qualquer mês
   const payments = await Payments.find({ team_id: teamId })
-    .populate("user_id", "nome user_type")
-    .populate("confirmed_by", "nome");
+    .populate("user_id", "nome")
+    .lean();
+
+  // uid -> { user_id, nome, status }
+  const byUser = new Map();
+
+  for (const p of payments) {
+    const uid = String(p.user_id?._id || p.user_id);
+    const nome = p.user_id?.nome || "Jogador";
+    const s = p.status || "pending";
+
+    if (!byUser.has(uid)) {
+      byUser.set(uid, {
+        user_id: uid,
+        nome,
+        status: s === "paid" ? "paid" : "unpaid",
+      });
+    } else {
+      const cur = byUser.get(uid);
+      if (s === "paid") cur.status = "paid";
+    }
+  }
+
+  const members = Array.from(byUser.values());
 
   return {
-    team,
+    team: {
+      _id: team._id,
+      nome: team.nome,
+    },
     members,
-    payments,
   };
 }
 
+// 🔹 Envia aviso administrativo para os REPRESENTANTES do time
+// Usa o próprio documento de Teams (created_by + members com user_type 'representante_time')
 async function notifyTeam(teamId) {
-
-  const team = await Teams.findById(teamId);
+  const team = await Teams.findById(teamId).lean();
   if (!team) throw new Error("Time não encontrado");
 
-  // Buscar membros
-  const members = await TeamMember.find({ team_id: teamId });
+  // pega todos firebaseUid de representantes daquele time
+  const repFirebaseUids = new Set();
 
-  if (members.length === 0)
-    throw new Error("Este time não possui membros");
+  if (
+    team.created_by &&
+    team.created_by.user_type === "representante_time" &&
+    team.created_by.uid
+  ) {
+    repFirebaseUids.add(String(team.created_by.uid));
+  }
 
-  const message = `O time ${team.nome} recebeu um novo aviso administrativo.`;
+  if (Array.isArray(team.members)) {
+    for (const m of team.members) {
+      if (m.user_type === "representante_time" && m.uid) {
+        repFirebaseUids.add(String(m.uid));
+      }
+    }
+  }
 
-  const notificationsToInsert = members.map(member => ({
-    user_id: member.user_id,
+  const repUidsArray = Array.from(repFirebaseUids);
+  if (repUidsArray.length === 0) {
+    // não há representantes cadastrados nesse time
+    return {
+      team: team.nome,
+      notified_count: 0,
+    };
+  }
+
+  // converte firebaseUid -> _id dos Users
+  const reps = await Users.find({ firebaseUid: { $in: repUidsArray } }).lean();
+  if (reps.length === 0) {
+    return {
+      team: team.nome,
+      notified_count: 0,
+    };
+  }
+
+  const message = `Seu prazo de pagamento está se esgotando para o time ${team.nome}.`;
+
+  const notificationsToInsert = reps.map((u) => ({
+    user_id: u._id,
     team_id: teamId,
     title: "Aviso do administrador",
     message,
-    viewed: false
+    viewed: false,
   }));
 
-  // Salva notificações
   await Notification.insertMany(notificationsToInsert);
 
   return {
     team: team.nome,
-    notified_count: members.length
+    notified_count: notificationsToInsert.length,
   };
 }
 
+// 🔹 Deleta time como admin
 async function deleteTeamAsAdmin(teamId) {
   return await teamService.deletarTime(teamId);
 }
 
 module.exports = {
-  getTeamFinanceById,
   listarTimesFinanceiros,
+  getTeamFinanceById,
   notifyTeam,
-  deleteTeamAsAdmin
+  deleteTeamAsAdmin,
 };
