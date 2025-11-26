@@ -1,10 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Users, Calendar, CreditCard, TrendingUp, Plus } from 'lucide-react'
+import { Users, Calendar, BarChart3, CreditCard, TrendingUp, Plus } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '@/components/ui/button'
+import { useNavigate } from 'react-router-dom'
 
 export default function AdminDashboard({ data }) {
   const { user } = useAuth()
+
+  const navigate = useNavigate();
+
+  const goToStats = () => {
+    navigate("/Stats");
+  };
+
+  const goToPayments = () => {
+    navigate("/Payments");
+  };
 
   return (
     <div className="space-y-6 fade-in">
@@ -21,8 +32,8 @@ export default function AdminDashboard({ data }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card><CardHeader><CardTitle>Times</CardTitle><Users /></CardHeader><CardContent><div className="text-2xl font-bold">{data.teams.length}</div></CardContent></Card>
-        <Card><CardHeader><CardTitle>Jogos Gerais</CardTitle><Calendar /></CardHeader><CardContent><div className="text-2xl font-bold">{data.games.length}</div></CardContent></Card>
-        <Card><CardHeader><CardTitle>Financeiro</CardTitle><CreditCard /></CardHeader><CardContent><div className="text-2xl font-bold">{data.payments.length}</div></CardContent></Card>
+        <Card variant="outline" onClick={goToStats}><CardHeader><CardTitle>Estatísticas</CardTitle><BarChart3 /></CardHeader><CardContent><div className="text-2xl font-bold">{data.games.length}</div></CardContent></Card>
+        <Card variant="outline" onClick={goToPayments}><CardHeader><CardTitle>Financeiro</CardTitle><CreditCard /></CardHeader><CardContent><div className="text-2xl font-bold">{data.payments.length}</div></CardContent></Card>
         <Card><CardHeader><CardTitle>Performance</CardTitle><TrendingUp /></CardHeader><CardContent><div className="text-2xl font-bold">85%</div></CardContent></Card>
       </div>
 

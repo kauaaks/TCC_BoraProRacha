@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useMemo, useState, useEffect } from 'react'
+import { useNavigate } from "react-router-dom";
 
 function Qr({ value, size = 220 }) {
   if (!value) return null
@@ -12,8 +13,26 @@ function Qr({ value, size = 220 }) {
   return <img src={src} alt="QR Code" className="rounded border" />
 }
 
+
 export default function TeamRepDashboard({ data, teamId }) {
   const { user, apiCall } = useAuth()
+  const navigate = useNavigate();
+
+  const goToStats = () => {
+    navigate("/Stats"); // Ou a rota que você definiu para as estatísticas
+  };
+
+  const goToMyTeams = () => {
+    navigate("/my-team")
+  }
+
+  const goToGames = () => {
+    navigate("/Games");
+  };
+
+  const goToPayments = () => {
+    navigate("/Payments");
+  };
 
   // Novo: estados e helpers para criação de time
   const [createOpen, setCreateOpen] = useState(false)
@@ -159,7 +178,7 @@ export default function TeamRepDashboard({ data, teamId }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+        <Card variant="outline" onClick={goToMyTeams}>
           <CardHeader>
             <CardTitle>Times</CardTitle>
             <Users />
@@ -169,7 +188,7 @@ export default function TeamRepDashboard({ data, teamId }) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card variant="outline" onClick={goToGames}>
           <CardHeader>
             <CardTitle>Jogos</CardTitle>
             <Calendar />
@@ -179,7 +198,7 @@ export default function TeamRepDashboard({ data, teamId }) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card variant="outline" onClick={goToPayments}>
           <CardHeader>
             <CardTitle>Pagamentos</CardTitle>
             <CreditCard />
@@ -304,7 +323,7 @@ export default function TeamRepDashboard({ data, teamId }) {
               </DialogContent>
             </Dialog>
 
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button variant="outline" className="h-20 flex-col space-y-2" onClick={goToStats}>
               <Trophy className="w-6 h-6" />
               <span className="text-sm">Ver Estatísticas</span>
             </Button>
