@@ -8,6 +8,9 @@ router.get("/", teamsController.listarTimes);
 router.get("/me", verifyFirebaseToken, teamsController.meuTime);
 router.get("/meustimes", verifyFirebaseToken, teamsController.meusTimes);
 router.get("/:id/members", verifyFirebaseToken, teamsController.listarMembrosTime);
+
+
+router.put("/:id/members/:uid/position",verifyFirebaseToken, teamsController.atualizarPosicaoMembro);
 router.post("/", verifyFirebaseToken, teamsController.criarTime);
 router.put("/:id", verifyFirebaseToken, teamsController.atualizarTime);
 router.delete("/:id", verifyFirebaseToken, teamsController.deletarTime);

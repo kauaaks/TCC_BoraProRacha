@@ -9,6 +9,11 @@ const greenPalette = [
   "#36c978", "#3cdb87", "#5bd09a", "#7dd5ad"
 ];
 
+const MONTH_LABELS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
 function StatCard({ value, label }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 flex flex-col items-center gap-2 border">
@@ -41,48 +46,226 @@ function PlayerStatCard({ player }) {
 }
 
 export default function EstatisticasRepresentante() {
-  const { user } = useAuth();
+  const { user, apiCall } = useAuth();
+
+  const [teams, setTeams] = useState([]);          // times do representante
+  const [selectedTeam, setSelectedTeam] = useState(null); // time escolhido p/ ver stats
+
   const [teamStats, setTeamStats] = useState(null);
   const [playerDetails, setPlayerDetails] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [pieDetail, setPieDetail] = useState({
-    labels: ["Atacante", "Meio-campo", "Defensor", "Goleiro"],
-    players: [8, 6, 7, 2],
+    labels: [],
+    players: [],
   });
 
+  const [loadingTeams, setLoadingTeams] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [error, setError] = useState("");
+
+  // 1) Buscar times do representante ao carregar página
   useEffect(() => {
     if (!user) return;
 
-    setTeamStats({
-      teamName: "Time Exemplo",
-      playersCount: 23,
-      matchesPlayed: 50,
-      wins: 40,
-      months: [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-      ],
-      winsPerMonth: [5, 3, 3, 5, 10, 4, 2, 2, 2, 2, 1, 0],
-    });
+    async function loadTeams() {
+      try {
+        setLoadingTeams(true);
+        setError("");
+        const res = await apiCall("/teams/meustimes");
+        const list = res?.teams || [];
+        setTeams(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error("Erro ao buscar times para estatísticas:", err);
+        setTeams([]);
+        setError("Não foi possível carregar os times.");
+      } finally {
+        setLoadingTeams(false);
+      }
+    }
 
-    setPlayerDetails([
-      { id: 1, name: "Jogador A", goals: 5, matches: 25, yellowCards: 2 },
-      { id: 2, name: "Jogador B", goals: 3, matches: 20, yellowCards: 1 },
-      { id: 3, name: "Jogador C", goals: 8, matches: 23, yellowCards: 3 },
-    ]);
+    loadTeams();
+  }, [user, apiCall]);
 
-    setAlerts([
-      { id: 1, message: "Jogador A está suspenso para a próxima partida." },
-      { id: 2, message: "Jogador C sofreu contusão leve." },
-    ]);
-  }, [user]);
+  // 2) Buscar estatísticas quando um time for selecionado
+  useEffect(() => {
+    if (!user || !selectedTeam) return;
 
-  if (!teamStats) return <div>Carregando estatísticas...</div>;
+    async function loadStats() {
+      try {
+        setLoadingStats(true);
+        setError("");
+
+        const teamId = selectedTeam.id || selectedTeam._id;
+        const statsRes = await apiCall(`/teamstats/${teamId}`);
+        if (statsRes?.error) {
+          throw new Error(statsRes.error);
+        }
+
+        const overview = statsRes.overview || {};
+
+        // vitórias por mês → array de 12 posições
+        const winsByMonth = Array.isArray(statsRes.winsByMonth)
+          ? statsRes.winsByMonth
+          : [];
+        const winsPerMonth = MONTH_LABELS.map((_, idx) => {
+          const rec = winsByMonth.find((m) => m.month === idx + 1);
+          return rec ? rec.wins : 0;
+        });
+
+        setTeamStats({
+          teamName: statsRes.team_name || selectedTeam.nome || selectedTeam.name,
+          playersCount: overview.playersCount ?? 0,
+          matchesPlayed: overview.matchesCount ?? 0,
+          wins: overview.winsCount ?? 0,
+          months: MONTH_LABELS,
+          winsPerMonth,
+        });
+
+        // jogadores (sem amarelos por enquanto)
+        const players = Array.isArray(statsRes.players) ? statsRes.players : [];
+        setPlayerDetails(
+          players.map((p, index) => ({
+            id: index + 1,
+            name: p.nome || "Jogador",
+            goals: p.goals ?? 0,
+            matches: p.matches ?? 0,
+            yellowCards: 0,
+          }))
+        );
+
+        // distribuição por posição
+        const pos = Array.isArray(statsRes.positionsDistribution)
+          ? statsRes.positionsDistribution
+          : [];
+        if (pos.length) {
+          setPieDetail({
+            labels: pos.map((p) => p.label),
+            players: pos.map((p) => p.value),
+          });
+        } else {
+          setPieDetail({ labels: [], players: [] });
+        }
+
+        // alertas (quando existir no backend)
+        const alertsArr = Array.isArray(statsRes.alerts) ? statsRes.alerts : [];
+        setAlerts(
+          alertsArr.map((a, index) => ({
+            id: a.id || index + 1,
+            message: a.message || String(a),
+          }))
+        );
+      } catch (err) {
+        console.error("Erro ao carregar estatísticas do time:", err);
+        setError("Não foi possível carregar as estatísticas desse time.");
+        setTeamStats(null);
+        setPlayerDetails([]);
+        setAlerts([]);
+        setPieDetail({ labels: [], players: [] });
+      } finally {
+        setLoadingStats(false);
+      }
+    }
+
+    loadStats();
+  }, [user, selectedTeam, apiCall]);
+
+  // Fase 1: escolher time (cards)
+  if (!selectedTeam) {
+    return (
+      <div className="max-w-6xl mx-auto px-8 pt-8 pb-4">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Estatísticas do Time
+        </h1>
+        <p className="text-gray-600 mb-6">
+          Selecione um dos seus times para visualizar as estatísticas detalhadas.
+        </p>
+
+        {loadingTeams ? (
+          <div className="text-gray-500">Carregando seus times...</div>
+        ) : teams.length === 0 ? (
+          <div className="text-red-500">
+            Nenhum time vinculado a este usuário.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {teams.map((t) => {
+              const id = t.id || t._id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className="bg-white rounded-xl shadow-md border p-6 text-left hover:ring-2 hover:ring-green-600 transition focus:outline-none"
+                  onClick={() => setSelectedTeam(t)}
+                >
+                  <h2 className="font-bold text-lg text-gray-900 mb-1">
+                    {t.nome || t.name}
+                  </h2>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {t.description || "Sem descrição cadastrada"}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Jogadores:{" "}
+                    {t.member_count ??
+                      (Array.isArray(t.members) ? t.members.length : 0)}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {error && (
+          <p className="text-sm text-red-500 mt-4">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Fase 2: mostrar estatísticas do time escolhido
+  if (loadingStats || !teamStats) {
+    return (
+      <div className="max-w-6xl mx-auto px-8 pt-8 pb-4">
+        <button
+          type="button"
+          className="text-sm text-green-700 mb-4 underline"
+          onClick={() => {
+            setSelectedTeam(null);
+            setTeamStats(null);
+          }}
+        >
+          &larr; Voltar para seleção de times
+        </button>
+        <div className="text-gray-500">Carregando estatísticas...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-8 pt-8 pb-4">
-      <h1 className="text-3xl font-bold text-gray-900 mb-1">Estatísticas do Time</h1>
-      <p className="text-gray-600 mb-8">Visão detalhada do seu time durante o campeonato.</p>
+      <button
+        type="button"
+        className="text-sm text-green-700 mb-4 underline"
+        onClick={() => {
+          setSelectedTeam(null);
+          setTeamStats(null);
+        }}
+      >
+        &larr; Voltar para seleção de times
+      </button>
+
+      <h1 className="text-3xl font-bold text-gray-900 mb-1">
+        Estatísticas do Time
+      </h1>
+      <p className="text-gray-600 mb-2">
+        Visão detalhada do {teamStats.teamName} durante o campeonato.
+      </p>
+      {error && (
+        <p className="text-sm text-red-500 mb-4">
+          {error}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <StatCard value={teamStats.playersCount} label="Jogadores" />
@@ -99,10 +282,17 @@ export default function EstatisticasRepresentante() {
             data={{
               labels: teamStats.months,
               datasets: [
-                { label: "Vitórias", data: teamStats.winsPerMonth, backgroundColor: green },
+                {
+                  label: "Vitórias",
+                  data: teamStats.winsPerMonth,
+                  backgroundColor: green,
+                },
               ],
             }}
-            options={{ responsive: true, plugins: { legend: { display: false } } }}
+            options={{
+              responsive: true,
+              plugins: { legend: { display: false } },
+            }}
             height={90}
           />
         </div>
@@ -116,7 +306,11 @@ export default function EstatisticasRepresentante() {
               data={{
                 labels: pieDetail.labels,
                 datasets: [
-                  { label: "Jogadores", data: pieDetail.players, backgroundColor: greenPalette },
+                  {
+                    label: "Jogadores",
+                    data: pieDetail.players,
+                    backgroundColor: greenPalette,
+                  },
                 ],
               }}
               options={{
@@ -130,27 +324,41 @@ export default function EstatisticasRepresentante() {
       </div>
 
       <div className="mb-8">
-        <h2 className="font-bold text-lg mb-4">Estatísticas Individuais dos Jogadores</h2>
+        <h2 className="font-bold text-lg mb-4">
+          Estatísticas Individuais dos Jogadores
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {playerDetails.map(player => (
-            <PlayerStatCard key={player.id} player={player} />
-          ))}
+          {playerDetails.length === 0 ? (
+            <p className="text-sm text-gray-500 col-span-full">
+              Nenhuma estatística registrada para este time ainda.
+            </p>
+          ) : (
+            playerDetails.map((player) => (
+              <PlayerStatCard key={player.id} player={player} />
+            ))
+          )}
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="font-bold text-lg mb-4 text-black">Alertas e Notificações</h2>
+        <h2 className="font-bold text-lg mb-4 text-black">
+          Alertas e Notificações
+        </h2>
         <div className="space-y-4">
           {alerts.length === 0 && (
-            <p className="italic text-gray-600">Sem notificações no momento.</p>
+            <p className="italic text-gray-600">
+              Sem notificações no momento.
+            </p>
           )}
-          {alerts.map(alert => (
+          {alerts.map((alert) => (
             <div
               key={alert.id}
               className="bg-red-500 hover:bg-red-400 flex items-center gap-2 p-3 rounded border border-red-300 bg-red-50"
             >
               <MdWarning className="w-5 h-5 text-red-900" />
-              <span className="font-semibold text-white">{alert.message}</span>
+              <span className="font-semibold text-white">
+                {alert.message}
+              </span>
             </div>
           ))}
         </div>

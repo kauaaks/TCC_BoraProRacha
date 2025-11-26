@@ -8,6 +8,15 @@ import { Input } from '@/components/ui/input'
 import GameStatsForm from '../components/forms/GameStatsForm'
 import QRCode from 'qrcode' // gerar QR local
 
+const POSITION_OPTIONS = [
+  { value: 'goleiro', label: 'Goleiro' },
+  { value: 'zagueiro', label: 'Zagueiro' },
+  { value: 'lateral', label: 'Lateral' },
+  { value: 'volante', label: 'Volante' },
+  { value: 'meia', label: 'Meia' },
+  { value: 'atacante', label: 'Atacante' },
+]
+
 function QrLocal({ value, size = 220 }) {
   const [src, setSrc] = useState('')
   useEffect(() => {
@@ -40,6 +49,9 @@ export default function MyTeam() {
   const inviteExpires = invite?.expiraEm ? new Date(invite.expiraEm).toLocaleString('pt-BR') : null
   const [inviteLoading, setInviteLoading] = useState(false)
 
+  // loading por membro na troca de posição
+  const [positionSaving, setPositionSaving] = useState({}) // { uid: true | false }
+
   useEffect(() => {
     loadTeamsAndMaybeFirst()
   }, [])
@@ -55,7 +67,6 @@ export default function MyTeam() {
         const first = list[0]
         setActiveTeam(first)
         const id = first.id || first._id
-        // Jogador não precisa de convite
         if (isRep) {
           await Promise.all([
             loadMembers(id),
@@ -129,6 +140,33 @@ export default function MyTeam() {
       document.execCommand('copy')
       document.body.removeChild(ta)
       alert('Copiado!')
+    }
+  }
+
+  // atualizar posição do jogador (chama PUT /teams/:id/members/:uid/position)
+  const handlePositionChange = async (memberUid, newPosition) => {
+    if (!isRep || !activeTeam) return
+    const teamId = activeTeam.id || activeTeam._id
+    if (!teamId || !memberUid || !newPosition) return
+
+    try {
+      setPositionSaving(prev => ({ ...prev, [memberUid]: true }))
+      await apiCall(`/teams/${teamId}/members/${memberUid}/position`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ position: newPosition })
+      })
+      // atualiza localmente o array de members
+      setMembers(prev =>
+        prev.map(m =>
+          m.uid === memberUid ? { ...m, position: newPosition } : m
+        )
+      )
+    } catch (e) {
+      console.error('Erro ao atualizar posição do jogador:', e)
+      alert('Não foi possível atualizar a posição. Tente novamente.')
+    } finally {
+      setPositionSaving(prev => ({ ...prev, [memberUid]: false }))
     }
   }
 
@@ -278,14 +316,54 @@ export default function MyTeam() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {members.length > 0 ? (
-                    members.map((member, idx) => (
-                      <div key={member.uid || member.id || idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-                        <div>
-                          <p className="font-medium">{member.nome || 'Desconhecido'}</p>
+                    members.map((member, idx) => {
+                      const uid = member.uid || member.id
+                      const saving = positionSaving[uid]
+                      const isPlayer = member.user_type === 'jogador'
+                      const isSelfRep = isRep && uid === user?.uid
+                      const canEditPosition = isRep && (isPlayer || isSelfRep)
+                      const currentPos = member.position || 'atacante'
+
+                      return (
+                        <div
+                          key={uid || idx}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-md gap-4"
+                        >
+                          <div className="flex flex-col">
+                            <p className="font-medium">{member.nome || 'Desconhecido'}</p>
+
+                            {/* Select de posição: só representante vê, para jogadores e para ele mesmo */}
+                            {canEditPosition && (
+                              <div className="mt-1 text-xs text-gray-600 flex items-center gap-2">
+                                <span>Posição:</span>
+                                <select
+                                  className="border rounded px-2 py-1 text-xs bg-white"
+                                  value={currentPos}
+                                  disabled={saving}
+                                  onChange={(e) => handlePositionChange(uid, e.target.value)}
+                                >
+                                  {POSITION_OPTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+
+                            {/* Jogador comum só enxerga a posição, não edita */}
+                            {!canEditPosition && member.position && (
+                              <span className="mt-1 text-xs text-gray-600">
+                                Posição:{' '}
+                                {POSITION_OPTIONS.find(p => p.value === member.position)?.label ||
+                                  member.position}
+                              </span>
+                            )}
+                          </div>
+                          <Badge variant="outline">{member.user_type || 'Jogador'}</Badge>
                         </div>
-                        <Badge variant="outline">{member.user_type || 'Jogador'}</Badge>
-                      </div>
-                    ))
+                      )
+                    })
                   ) : (
                     <p className="text-sm text-gray-500">Nenhum membro cadastrado</p>
                   )}

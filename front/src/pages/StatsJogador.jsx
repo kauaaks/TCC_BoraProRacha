@@ -10,13 +10,31 @@ import {
   Legend,
 } from "chart.js";
 import { MdWarning, MdStar } from "react-icons/md";
+import { useAuth } from "../contexts/AuthContext";
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend);
 
 const green = "#21633a";
 const greenPalette = ["#164b2c", "#21633a", "#278048", "#2d9e57", "#30b768"];
 
+const MONTH_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
 export default function EstatisticasJogador() {
+  const { user, apiCall } = useAuth();
+
   const [profile, setProfile] = useState({});
   const [stats, setStats] = useState({});
   const [golsPorMes, setGolsPorMes] = useState([]);
@@ -25,55 +43,97 @@ export default function EstatisticasJogador() {
   const [ranking, setRanking] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [awards, setAwards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    // Dados simulados; substitua pela API real se disponível
-    setProfile({
-      avatar: null,
-      name: "João da Silva",
-      position: "Atacante",
-      age: 22,
-      status: "Ativo",
-    });
-    setStats({
-      matches: 18,
-      gols: 14,
-      assists: 6,
-      yellows: 3,
-      minutes: 1560,
-      presencePct: 85,
-    });
-    setGolsPorMes([0, 2, 2, 1, 3, 2, 1, 1, 1, 0, 1, 0]);
-    setAssistsPorMes([1, 0, 1, 2, 0, 1, 0, 0, 0, 0, 1, 0]);
-    setRecentGames([
-      { id: 1, opponent: "Time Alpha", result: "Vitória", score: "3x1", gols: 1, assists: 1, yellow: false },
-      { id: 2, opponent: "Time Beta", result: "Derrota", score: "0x2", gols: 0, assists: 0, yellow: true },
-      { id: 3, opponent: "Time Zeta", result: "Empate", score: "2x2", gols: 2, assists: 0, yellow: false },
-    ]);
-    setRanking([
-      { name: "João da Silva", gols: 14 },
-      { name: "Pedro Santos", gols: 16 },
-      { name: "Carlos Lima", gols: 13 },
-    ]);
-    setAlerts([
-      { id: 1, message: "Pendurado: mais 2 cartões para suspensão." },
-      { id: 2, message: "Recomendação: participar de treino extra de finalização." },
-    ]);
-    setAwards([
-      { id: 1, title: "Artilheiro do mês - Abril" },
-      { id: 2, title: "Melhor em campo na rodada 10" },
-    ]);
-  }, []);
+    if (!user) return;
+
+    async function loadPlayerStats() {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await apiCall("/playerstats/me");
+        if (res?.error) throw new Error(res.error);
+
+        const p = res.profile || {};
+        const s = res.stats || {};
+
+        setProfile({
+          avatar: p.avatar || null,
+          name: p.name || user.displayName || "Jogador",
+          position: p.position || "Atacante",
+          age: p.age || 0,
+          status: p.status || "Ativo",
+        });
+
+        setStats({
+          matches: s.matches ?? 0,
+          gols: s.gols ?? 0,
+          assists: s.assists ?? 0,
+        });
+
+        const gpm = Array.isArray(res.golsPorMes) ? res.golsPorMes : [];
+        const apm = Array.isArray(res.assistsPorMes) ? res.assistsPorMes : [];
+        setGolsPorMes(MONTH_LABELS.map((_, i) => gpm[i] ?? 0));
+        setAssistsPorMes(MONTH_LABELS.map((_, i) => apm[i] ?? 0));
+
+        setRecentGames(Array.isArray(res.recentGames) ? res.recentGames : []);
+        setRanking(Array.isArray(res.ranking) ? res.ranking : []);
+        setAlerts(Array.isArray(res.alerts) ? res.alerts : []);
+        setAwards(Array.isArray(res.awards) ? res.awards : []);
+      } catch (err) {
+        console.error("Erro ao carregar estatísticas do jogador:", err);
+        setError("Não foi possível carregar suas estatísticas.");
+        setProfile({});
+        setStats({});
+        setGolsPorMes([]);
+        setAssistsPorMes([]);
+        setRecentGames([]);
+        setRanking([]);
+        setAlerts([]);
+        setAwards([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadPlayerStats();
+  }, [user, apiCall]);
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <p className="text-gray-500">Carregando estatísticas do jogador...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
+      {error && (
+        <p className="text-sm text-red-500 mb-4">
+          {error}
+        </p>
+      )}
+
       {/* Perfil */}
       <div className="flex items-center gap-6 mb-10">
         <div className="w-24 h-24 rounded-full bg-green-200 flex items-center justify-center text-green-900 text-4xl font-bold">
           {profile.avatar ? (
-            <img src={profile.avatar} alt="Avatar" className="w-24 h-24 rounded-full object-cover" />
+            <img
+              src={profile.avatar}
+              alt="Avatar"
+              className="w-24 h-24 rounded-full object-cover"
+            />
           ) : (
-            <span>{profile.name?.split(" ").map(n => n[0]).join("").slice(0, 2)}</span>
+            <span>
+              {profile.name
+                ?.split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2)}
+            </span>
           )}
         </div>
         <div>
@@ -86,11 +146,10 @@ export default function EstatisticasJogador() {
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-        <StatCard value={stats.matches} label="Partidas" />
-        <StatCard value={stats.gols} label="Gols" />
-        <StatCard value={stats.assists} label="Assistências" />
-        <StatCard value={stats.yellows} label="Amarelos" />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-10">
+        <StatCard value={stats.matches ?? 0} label="Partidas" />
+        <StatCard value={stats.gols ?? 0} label="Gols" />
+        <StatCard value={stats.assists ?? 0} label="Assistências" />
       </div>
 
       {/* Evolução */}
@@ -98,9 +157,16 @@ export default function EstatisticasJogador() {
         <ChartCard title="Evolução dos Gols por mês">
           <Line
             data={{
-              labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun","Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+              labels: MONTH_LABELS,
               datasets: [
-                { label: "Gols", data: golsPorMes, borderColor: green, backgroundColor: "rgba(33,99,58,0.1)", fill: true, tension: 0.3 }
+                {
+                  label: "Gols",
+                  data: golsPorMes,
+                  borderColor: green,
+                  backgroundColor: "rgba(33,99,58,0.1)",
+                  fill: true,
+                  tension: 0.3,
+                },
               ],
             }}
             options={{ responsive: true, plugins: { legend: { display: false } } }}
@@ -111,9 +177,16 @@ export default function EstatisticasJogador() {
         <ChartCard title="Evolução das Assistências por mês">
           <Line
             data={{
-              labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun","Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+              labels: MONTH_LABELS,
               datasets: [
-                { label: "Assistências", data: assistsPorMes, borderColor: greenPalette[2], backgroundColor: "rgba(39,128,72,0.1)", fill: true, tension: 0.3 }
+                {
+                  label: "Assistências",
+                  data: assistsPorMes,
+                  borderColor: greenPalette[2],
+                  backgroundColor: "rgba(39,128,72,0.1)",
+                  fill: true,
+                  tension: 0.3,
+                },
               ],
             }}
             options={{ responsive: true, plugins: { legend: { display: false } } }}
@@ -132,23 +205,41 @@ export default function EstatisticasJogador() {
               <th className="border px-3 py-1">Placar</th>
               <th className="border px-3 py-1">Gols</th>
               <th className="border px-3 py-1">Assistências</th>
-              <th className="border px-3 py-1">Cartão</th>
             </tr>
           </thead>
           <tbody>
-            {recentGames.map(game => (
-              <tr key={game.id} className="border-t hover:bg-gray-50">
-                <td className="border px-3 py-1">{game.opponent}</td>
-                <td className={`border px-3 py-1 font-semibold ${
-                  game.result === "Vitória" ? "text-green-700" :
-                  game.result === "Derrota" ? "text-red-500" : "text-yellow-700"
-                }`}>{game.result}</td>
-                <td className="border px-3 py-1 text-center">{game.score}</td>
-                <td className="border px-3 py-1 text-center">{game.gols}</td>
-                <td className="border px-3 py-1 text-center">{game.assists}</td>
-                <td className="border px-3 py-1 text-center">{game.yellow ? "🟨" : "-"}</td>
+            {recentGames.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="border px-3 py-2 text-center text-gray-500"
+                >
+                  Nenhum jogo registrado ainda.
+                </td>
               </tr>
-            ))}
+            ) : (
+              recentGames.map((game) => (
+                <tr key={game.id} className="border-t hover:bg-gray-50">
+                  <td className="border px-3 py-1">{game.opponent}</td>
+                  <td
+                    className={`border px-3 py-1 font-semibold ${
+                      game.result === "Vitória"
+                        ? "text-green-700"
+                        : game.result === "Derrota"
+                        ? "text-red-500"
+                        : "text-yellow-700"
+                    }`}
+                  >
+                    {game.result}
+                  </td>
+                  <td className="border px-3 py-1 text-center">{game.score}</td>
+                  <td className="border px-3 py-1 text-center">{game.gols}</td>
+                  <td className="border px-3 py-1 text-center">
+                    {game.assists}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </CardSection>
@@ -156,23 +247,37 @@ export default function EstatisticasJogador() {
       {/* Ranking */}
       <CardSection title="Ranking de Gols do Time">
         <div>
-          {ranking
-            .sort((a,b) => b.gols - a.gols)
-            .map((player, i) => (
-              <div key={player.name} className="flex justify-between py-2 border-b last:border-b-0">
-                <span className="font-semibold text-green-900">{i+1}º. {player.name}</span>
-                <span className="text-green-800">{player.gols} gols</span>
-                {player.name === profile.name && <MdStar className="inline text-yellow-500" />}
-              </div>
-            ))
-          }
+          {ranking.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              Ainda não há ranking de gols para o seu time.
+            </p>
+          ) : (
+            ranking
+              .sort((a, b) => b.gols - a.gols)
+              .map((player, i) => (
+                <div
+                  key={player.uid || player.name}
+                  className="flex justify-between py-2 border-b last:border-b-0"
+                >
+                  <span className="font-semibold text-green-900">
+                    {i + 1}º. {player.name}
+                  </span>
+                  <span className="text-green-800">{player.gols} gols</span>
+                  {player.name === profile.name && (
+                    <MdStar className="inline text-yellow-500" />
+                  )}
+                </div>
+              ))
+          )}
         </div>
       </CardSection>
 
       {/* Premiações */}
       <CardSection title="Premiações e Destaques">
-        {awards.length === 0 && <p className="italic text-gray-600">Nenhuma premiação registrada.</p>}
-        {awards.map(award => (
+        {awards.length === 0 && (
+          <p className="italic text-gray-600">Nenhuma premiação registrada.</p>
+        )}
+        {awards.map((award) => (
           <div key={award.id} className="flex items-center gap-2 py-1">
             <MdStar className="text-yellow-400" />
             <span>{award.title}</span>
@@ -182,8 +287,10 @@ export default function EstatisticasJogador() {
 
       {/* Alertas */}
       <CardSection title="Alertas e Feedback" alert>
-        {alerts.length === 0 && <p className="italic text-gray-600">Nenhum alerta no momento.</p>}
-        {alerts.map(alert => (
+        {alerts.length === 0 && (
+          <p className="italic text-gray-600">Nenhum alerta no momento.</p>
+        )}
+        {alerts.map((alert) => (
           <div key={alert.id} className="bg-red-500 text-white rounded p-2 mb-2">
             <MdWarning className="text-red-900 inline-block mr-1" />
             <span>{alert.message}</span>
@@ -207,7 +314,11 @@ function ChartCard({ title, children }) {
 // Componente reutilizável para seções com título
 function CardSection({ title, children, alert }) {
   return (
-    <section className={`mb-10 p-6 bg-white rounded-xl shadow-md ${alert ? "border" : ""}`}>
+    <section
+      className={`mb-10 p-6 bg-white rounded-xl shadow-md ${
+        alert ? "border" : ""
+      }`}
+    >
       <h2 className="font-bold text-xl mb-5">{title}</h2>
       {children}
     </section>

@@ -75,7 +75,11 @@ async function meuTime(req, res) {
 
 async function atualizarTime(req, res) {
   try {
-    const time = await teamsService.atualizarTime(req.params.id, req.body, { new: true, runValidators: true });
+    const time = await teamsService.atualizarTime(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
     res.status(200).json(time);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -101,6 +105,19 @@ async function monthRange(req, res) {
   }
 }
 
+// NOVO: atualizar posição de um membro do time
+async function atualizarPosicaoMembro(req, res) {
+  try {
+    const { id, uid } = req.params;
+    const { position } = req.body;
+
+    const team = await teamsService.atualizarPosicaoMembro(id, uid, position);
+    return res.status(200).json(team);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+}
+
 module.exports = {
   listarTimes,
   buscarTime,
@@ -110,5 +127,6 @@ module.exports = {
   meuTime,
   listarMembrosTime,
   meusTimes,
-  monthRange
+  monthRange,
+  atualizarPosicaoMembro, // <- não pode esquecer este export
 };

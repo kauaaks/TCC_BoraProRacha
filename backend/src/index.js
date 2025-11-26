@@ -11,6 +11,7 @@ const path = require('path');
 
 const app = express();
 
+app.disable('etag');
 
 const FRONT = process.env.FRONT_ORIGIN || 'http://localhost:5173';
 
@@ -52,7 +53,8 @@ const gamesRoute = require ("./routes/gamesRoute.js");
 const paymentRoute = require ("./routes/paymentsRoute.js");
 const inviteRoutes = require ("./routes/inviteRoutes.js");
 const adminRoute = require('./routes/adminRoute');
-
+const teamStatsRoute = require("./routes/teamStatsRoute");
+const playerStatsRoute = require("./routes/playerStatsRoute");
 
 app.use('/users', userRoute);
 app.use('/teams', teamsRoute);
@@ -63,7 +65,8 @@ console.log("[index] before mount /invite");
 app.use('/invite', inviteRoutes);
 console.log("[index] after mount /invite");
 app.use('/admin', adminRoute);
-
+app.use("/teamstats", teamStatsRoute);
+app.use("/playerstats", playerStatsRoute);
 
 app.use('/uploads', (req, res, next) => {
   

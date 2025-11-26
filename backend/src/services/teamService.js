@@ -103,7 +103,6 @@ async function timeUid(uid) {
   }
 }
 
-
 async function buscarTime(id) {
   const team = await teams.findById(id);
   if (!team) throw new Error("time não encontrado.");
@@ -146,16 +145,19 @@ async function listarMembrosTime(teamId) {
   const members = memberUids.map(uid => {
     const userData = users.find(u => u.firebaseUid === uid);
     let originalUserType = null;
+    let position = undefined;
     for (const m of team.members) {
       const val = typeof m === "object" ? (m.uid || m.firebaseUid || m._id || m.id) : m;
       if (String(val) === uid) {
         originalUserType = typeof m === "object" ? m.user_type : null;
+        position = typeof m === "object" ? m.position : undefined;
         break;
       }
     }
     return {
       uid,
       user_type: originalUserType,
+      position,
       nome: userData?.nome || "Desconhecido"
     };
   });
@@ -178,6 +180,25 @@ async function deletarTime(id) {
   return { message: "time deletado com sucesso." };
 }
 
+// NOVO: atualizar posição de um membro do time
+async function atualizarPosicaoMembro(teamId, memberUid, newPosition) {
+  if (!teamId || !memberUid || !newPosition) {
+    throw new Error("Informe teamId, uid do jogador e nova posição.");
+  }
+
+  const team = await teams.findOneAndUpdate(
+    { _id: teamId, "members.uid": memberUid },
+    { $set: { "members.$.position": newPosition } },
+    { new: true, runValidators: true }
+  );
+
+  if (!team) {
+    throw new Error("Time ou membro não encontrado para atualizar posição.");
+  }
+
+  return team;
+}
+
 async function monthRange(id) {
   const team = await buscarTime(id);
   return {
@@ -197,5 +218,6 @@ module.exports = {
   timeUid,
   firstMonthForTeam,
   lastMonthForTeam,
-  monthRange
+  monthRange,
+  atualizarPosicaoMembro
 };
