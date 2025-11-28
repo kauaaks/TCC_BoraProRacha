@@ -118,7 +118,7 @@ export default function EstatisticasJogador() {
       )}
 
       {/* Perfil */}
-      <div className="flex items-center gap-6 mb-10">
+      <div className="flex items-center gap-6 mb-10 ">
         <div className="w-24 h-24 rounded-full bg-green-200 flex items-center justify-center text-green-900 text-4xl font-bold">
           {profile.avatar ? (
             <img

@@ -178,7 +178,7 @@ export default function MyTeam() {
       </div>
 
       {loading ? (
-        <div className="text-gray-500">Carregando informações...</div>
+        <div className="text-gray-500 ">Carregando informações...</div>
       ) : teams.length === 0 ? (
         <div className="text-red-500">Nenhum time vinculado a este usuário.</div>
       ) : (
