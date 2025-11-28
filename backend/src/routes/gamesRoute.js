@@ -4,7 +4,6 @@ const router = express.Router();
 const gamesController = require("../controllers/gamesController");
 const { verifyFirebaseToken } = require("../middlewares/verifyFirebaseToken");
 
-
 router.get("/", verifyFirebaseToken, gamesController.listarJogos);
 router.post("/", verifyFirebaseToken, gamesController.criarJogo);
 router.post("/:id/accept", verifyFirebaseToken, gamesController.aceitarJogo);

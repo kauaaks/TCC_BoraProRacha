@@ -56,6 +56,7 @@ const adminRoute = require('./routes/adminRoute');
 const teamStatsRoute = require("./routes/teamStatsRoute");
 const playerStatsRoute = require("./routes/playerStatsRoute");
 const notificationRoute = require("./routes/notificationRoute");
+const panelaoRoute = require('./routes/panelaoRoute');
 
 app.use('/users', userRoute);
 app.use('/teams', teamsRoute);
@@ -69,6 +70,7 @@ app.use('/admin', adminRoute);
 app.use("/teamstats", teamStatsRoute);
 app.use("/playerstats", playerStatsRoute);
 app.use("/notifications", notificationRoute);
+app.use('/panelao', panelaoRoute);
 
 app.use('/uploads', (req, res, next) => {
   

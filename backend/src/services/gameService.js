@@ -137,8 +137,6 @@ async function marcarTerminado(jogoId, uid) {
 }
 
 async function listarJogosPorStatus(uid, status, teamId) {
-  const Times = require('../models/teams');
-
   const query = { status };
   if (teamId) {
     query.teams_id = teamId;
@@ -167,5 +165,5 @@ module.exports = {
   cancelarJogo,
   marcarTerminado,
   listarJogosPorStatus,
-  definirResultado 
+  definirResultado,
 };
