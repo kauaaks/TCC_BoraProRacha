@@ -299,6 +299,8 @@ export default function GamesRepresentante() {
       setTeamPlayers(playersWithNames);
 
       const gamesData = await apiCall(`/panelao/teams/${teamId}`);
+
+      
       const formattedGames = (gamesData || []).map((game) => {
         const scheduledDate = new Date(game.scheduled_date);
         return {
@@ -347,12 +349,12 @@ export default function GamesRepresentante() {
       scheduled_date,  
       duration: 90,
       nTimes: Number(newGame.teamsCount),    
-      is_tournament: Number(newGame.teamsCount) > 2,
+      is_tournament: Number(newGame.teamsCount) === 4,
       place: newGame.place,
       note: newGame.note
     };
 
-    console.log('[🚀 FRONTEND] Enviando payload:', gameData);
+    console.log('[FRONTEND] Enviando payload:', gameData);
 
     const createdGame = await apiCall(`/panelao/teams/${selectedTeam}`, {
       method: "POST",
@@ -618,32 +620,41 @@ export default function GamesRepresentante() {
   };
 
   const confirmFinishGame = async () => {
-    try {
-      setSubmitting(true);
-      setConfirmFinish(false);
+  try {
+    setSubmitting(true);
+    setConfirmFinish(false);
 
-      await apiCall(`/panelao/${sortModalGame._id}/finish`, {
-        method: "PATCH",
-      });
+    await apiCall(`/panelao/${sortModalGame._id}/finish`, {
+      method: "PATCH",
+    });
 
-      const updated = games.map((g) =>
-        g._id === sortModalGame._id || g.id === sortModalGame.id
-          ? { ...g, status: "terminado" }
-          : g
-      );
-      setGames(updated);
+    const updated = games.map((g) =>
+      g._id === sortModalGame._id || g.id === sortModalGame.id
+        ? { ...g, status: "terminado" }
+        : g
+    );
+    console.log("ANTES", games);
+    console.log("DEPOIS", updated);
 
-      closeSortModal();
-      setActiveTab("finalizados");
+    setGames(updated);
 
-      alert("Jogo finalizado com sucesso!");
-    } catch (error) {
-      console.error("Erro ao finalizar jogo:", error);
-      alert("Erro ao finalizar jogo: " + (error?.message || "Erro desconhecido"));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    // mantém o objeto do modal sincronizado, caso você não feche
+    setSortModalGame((prev) =>
+      prev ? { ...prev, status: "terminado" } : prev
+    );
+
+    closeSortModal();
+    // remove esta linha para não trocar de aba automaticamente
+    // setActiveTab("finalizados");
+
+    alert("Jogo finalizado com sucesso!");
+  } catch (error) {
+    console.error("Erro ao finalizar jogo:", error);
+    alert("Erro ao finalizar jogo: " + (error?.message || "Erro desconhecido"));
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const formatDateLabel = (date, time) => {
     try {
@@ -854,10 +865,16 @@ export default function GamesRepresentante() {
                         <Shuffle className="w-3 h-3" />
                         {game.teamsCount || 2} times
                       </span>
-                      {game.tournament && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      {game.tournament && game.teamsCount === 4 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <Trophy className="w-3 h-3" />
+                        Mini‑torneio (4 times)
+                      </span>
+                      )}
+                      {!game.tournament && game.teamsCount > 2 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           <Trophy className="w-3 h-3" />
-                          Torneio
+                          Racha entre panelas
                         </span>
                       )}
                       <StatusBadge status={game.status} />
@@ -959,11 +976,11 @@ export default function GamesRepresentante() {
                       <SelectValue placeholder="Escolha..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {[2, 3, 4, 5, 6].map((n) => (
-                        <SelectItem key={n} value={String(n)}>
-                          {n} times {n > 2 && "(Mini-torneio)"}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="2">2 times (Racha normal)</SelectItem>
+                      <SelectItem value="3">3 times (Apenas panelas)</SelectItem>
+                      <SelectItem value="4">4 times (Mini‑torneio)</SelectItem>
+                      <SelectItem value="5">5 times (Apenas panelas)</SelectItem>
+                      <SelectItem value="6">6 times (Apenas panelas)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1029,7 +1046,7 @@ export default function GamesRepresentante() {
                 <MapPin className="w-4 h-4" />
                 {sortModalGame.place} • {sortModalGame.teamsCount || 2} times
                 {sortModalGame.tournament && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <Trophy className="w-3 h-3" />
                     Mini-Torneio
                   </span>
@@ -1099,65 +1116,76 @@ export default function GamesRepresentante() {
             )}
 
             {sortModalGame.status !== "terminado" && (
-              <div className="flex justify-between items-center mb-4">
+              <div className="border-t pt-4 mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <p className="text-sm text-gray-600">
                   {sortModalGame.squads
-                    ? sortModalGame.tournament
-                      ? "Registre os resultados das partidas do torneio."
-                      : "Panelas sorteadas. Registre o placar."
+                    ? sortModalGame.tournament && sortModalGame.teamsCount === 4
+                      ? "Registre os resultados das partidas do mini‑torneio."
+                      : "Panelas sorteadas. Você pode registrar o placar ou finalizar o jogo."
                     : 'Clique em "Sortear panelas" para distribuir os jogadores.'}
                 </p>
 
-                <div className="flex gap-2">
-                  {(!sortModalGame.squads || sortModalGame.squads.length === 0) && (
+                <div className="flex flex-wrap gap-2 justify-end">
+                  {!sortModalGame.squads && (
                     <Button
                       variant="outline"
                       className="flex items-center gap-2"
                       onClick={handleSortSquads}
                       disabled={submitting}
                     >
-                      {submitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Sorteando...
-                        </>
-                      ) : (
-                        <>
-                          <Shuffle className="w-4 h-4" />
-                          Sortear panelas
-                        </>
-                      )}
+                      <Shuffle className="w-4 h-4" />
+                      Sortear panelas
                     </Button>
                   )}
 
-                  {sortModalGame.squads &&
-                    sortModalGame.squads.length === 2 &&
-                    !sortModalGame.tournament && (
-                      <Button
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={handleOpenScoreModal}
-                        disabled={submitting}
-                      >
-                        {sortModalGame.goals_team1 != null
-                          ? "Editar Placar"
-                          : "Registrar Placar"}
-                      </Button>
-                    )}
-
-                  {sortModalGame.squads && sortModalGame.squads.length > 0 && (
+                  {sortModalGame.squads && !sortModalGame.tournament && sortModalGame.teamsCount === 2 && (
                     <Button
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                      onClick={handleFinishGame}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={handleOpenScoreModal}
                       disabled={submitting}
                     >
-                      Finalizar {sortModalGame.tournament ? "Torneio" : "Jogo"}
+                      <Trophy className="w-4 h-4" />
+                      Registrar placar
                     </Button>
                   )}
+
+                  {sortModalGame.squads && sortModalGame.tournament && sortModalGame.teamsCount === 4 && (
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={() => {
+                        // se quiser, pode abrir alguma ajuda/explicação aqui
+                      }}
+                      disabled={submitting}
+                    >
+                      <Trophy className="w-4 h-4" />
+                      Gerenciar torneio
+                    </Button>
+                  )}
+
+                  <Button
+                    className="bg-appsociety-green hover:bg-green-600 text-white flex items-center gap-2"
+                    onClick={handleFinishGame}
+                    disabled={submitting || !sortModalGame.squads}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Finalizando...
+                      </>
+                    ) : (
+                      <>
+                        <Trophy className="w-4 h-4" />
+                        Finalizar jogo
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             )}
 
-            {sortModalGame.tournament ? (
+            {sortModalGame.tournament && sortModalGame.teamsCount === 4 ? (
               <TournamentBracketAdmin
                 tournament={sortModalGame.tournament}
                 squads={sortModalGame.squads}
