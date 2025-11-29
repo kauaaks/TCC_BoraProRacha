@@ -85,7 +85,6 @@ function AppRoutes() {
         }
       />
 
-      {/* Painel Gestor - apenas para gestor_campo (se usar depois) */}
       <Route
         path="/fields"
         element={

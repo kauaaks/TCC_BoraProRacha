@@ -1,6 +1,5 @@
 const adminService = require("../services/adminService");
 
-// GET /admin/teams/finance
 async function listarTimesFinanceiros(req, res) {
   try {
     const dados = await adminService.listarTimesFinanceiros();
@@ -15,7 +14,6 @@ async function listarTimesFinanceiros(req, res) {
   }
 }
 
-// GET /admin/teams/:id/finance
 async function getTeamFinanceById(req, res) {
   try {
     const { id } = req.params;
@@ -29,7 +27,6 @@ async function getTeamFinanceById(req, res) {
   }
 }
 
-// POST /admin/teams/:id/notify
 async function notifyTeam(req, res) {
   try {
     const { id } = req.params;
@@ -45,7 +42,6 @@ async function notifyTeam(req, res) {
   }
 }
 
-// DELETE /admin/teams/:id
 async function deleteTeam(req, res) {
   try {
     await adminService.deleteTeamAsAdmin(req.params.id);
