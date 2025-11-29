@@ -37,17 +37,26 @@ export function AuthProvider({ children }) {
 
   
   const fetchMongoUser = async (firebaseUid, idToken) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/users/firebase/${firebaseUid}?t=${Date.now()}`, {
-        headers: { Authorization: `Bearer ${idToken}` }
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch (err) {
-      console.error("Erro ao buscar usuário no MongoDB:", err);
-      return null;
-    }
-  };
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/users/firebase/${firebaseUid}?t=${Date.now()}`,
+      {
+        headers: { Authorization: `Bearer ${idToken}` },
+      }
+    );
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    // se o back responder { user: {...} }, pega o user;
+    // se responder o doc direto, usa o próprio data
+    return data.user || data;
+  } catch (err) {
+    console.error("Erro ao buscar usuário no MongoDB:", err);
+    return null;
+  }
+};
+
 
   
   useEffect(() => {

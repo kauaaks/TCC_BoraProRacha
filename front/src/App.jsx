@@ -4,7 +4,7 @@ import Login from './components/Login'
 import Layout from './components/Layout'
 
 import Dashboard from './pages/Dashboard'
-import AdminPanel from './pages/AdminPanel'
+import AdminDashboard from './pages/AdminDashboard' // ⬅ painel novo
 import FieldsManager from './pages/FieldsManager'
 import MyTeam from './pages/MyTeam'
 import InviteAccept from './pages/InviteAccept'
@@ -15,8 +15,7 @@ import Stats from './components/Stats'
 import Profile from './pages/Profile'
 import JoinTeam from './pages/invitations/join'
 import PrivacyPolicy from './pages/PrivacyPolicy'
-import TermsOfUse from './pages/TermsOfUse';  
-
+import TermsOfUse from './pages/TermsOfUse'
 
 import PrivateRoute from './routes/PrivateRoute'
 
@@ -28,10 +27,29 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Login */}
-      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/dashboard" /> : <Login />}
+      />
       <Route path="/" element={<Navigate to="/dashboard" />} />
-      <Route path="/privacy-policy" element={<Layout><PrivacyPolicy /></Layout>} />
-      <Route path="/terms-of-use" element={<Layout><TermsOfUse /></Layout>} />
+
+      <Route
+        path="/privacy-policy"
+        element={
+          <Layout>
+            <PrivacyPolicy />
+          </Layout>
+        }
+      />
+      <Route
+        path="/terms-of-use"
+        element={
+          <Layout>
+            <TermsOfUse />
+          </Layout>
+        }
+      />
+
       <Route
         path="/convite/:token"
         element={
@@ -42,6 +60,7 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+
       {/* Dashboard para qualquer usuário autenticado */}
       <Route
         path="/dashboard"
@@ -60,13 +79,13 @@ function AppRoutes() {
         element={
           <PrivateRoute allowedTypes={['admin']}>
             <Layout>
-              <AdminPanel />
+              <AdminDashboard />
             </Layout>
           </PrivateRoute>
         }
       />
 
-      {/* Painel Gestor - apenas para field_manager */}
+      {/* Painel Gestor - apenas para gestor_campo (se usar depois) */}
       <Route
         path="/fields"
         element={
@@ -78,7 +97,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Painel Representante de Time - apenas para team_rep */}
+      {/* Painel Representante / Jogador */}
       <Route
         path="/my-team"
         element={
@@ -149,14 +168,21 @@ function AppRoutes() {
       <Route
         path="/invitations/join"
         element={
-          <PrivateRoute allowedTypes={['jogador', 'representante_time', 'admin', 'gestor_campo']}>
+          <PrivateRoute
+            allowedTypes={[
+              'jogador',
+              'representante_time',
+              'admin',
+              'gestor_campo',
+            ]}
+          >
             <Layout>
               <JoinTeam />
             </Layout>
           </PrivateRoute>
         }
       />
-    </Routes>     
+    </Routes>
   )
 }
 

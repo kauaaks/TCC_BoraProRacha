@@ -1,7 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Pencil, Image as ImageIcon } from "lucide-react";
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Profile() {
   const { user, apiCall, setUser } = useAuth();
@@ -13,11 +15,24 @@ export default function Profile() {
     (displayName?.replace(/\s/g, "").toLowerCase() ||
       user?.email?.split("@")[0]);
 
+  // avatar vindo do back (se existir)
+  const initialAvatar =
+    user?.avatar ? `${API_BASE_URL}${user.avatar}` : undefined;
+
   // estado local
   const [showNameModal, setShowNameModal] = useState(false);
   const [name, setName] = useState(displayName);
   const [loading, setLoading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(initialAvatar);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef(null);
+
+  // se o back atualizar user.avatar (ex.: após login ou refresh), sincroniza
+  useEffect(() => {
+    if (user?.avatar) {
+      setAvatarUrl(`${API_BASE_URL}${user.avatar}`);
+    }
+  }, [user?.avatar]);
 
   const openName = () => {
     setName(user?.nome || user?.displayName || "");
@@ -27,14 +42,13 @@ export default function Profile() {
   const saveName = async () => {
     try {
       setLoading(true);
-      // Backend: PATCH /users/me aceita { nome }
       const res = await apiCall("/users/me", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome: name })
+        body: JSON.stringify({ nome: name }),
       });
       if (res?.user) {
-        setUser(res.user); // atualiza contexto → dashboard reflete novo nome
+        setUser(res.user);
         setShowNameModal(false);
       } else {
         alert(res?.message || "Falha ao atualizar nome");
@@ -49,21 +63,43 @@ export default function Profile() {
   const onAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     if (file.size > 2 * 1024 * 1024) {
       alert("Imagem até 2MB");
+      e.target.value = "";
       return;
     }
-    const fd = new FormData();
-    fd.append("avatar", file);
 
-    // Ajuste esta rota quando criar o endpoint de avatar no back
-    const res = await apiCall("/users/me/avatar", { method: "PUT", body: fd });
-    if (res?.user) {
-      setUser(res.user);
-    } else {
-      alert(res?.message || "Falha ao atualizar avatar");
+    // preview otimista no front
+    const localPreview = URL.createObjectURL(file);
+    setAvatarUrl(localPreview);
+
+    const fd = new FormData();
+    fd.append("avatar", file); // nome do campo esperado pelo back [web:409][web:465]
+
+    try {
+      setUploadingAvatar(true);
+      // novo endpoint do back: PATCH /perfil/avatar
+      const res = await apiCall("/perfil/avatar", {
+        method: "PATCH",
+        body: fd, // não setar Content-Type manualmente com FormData
+      });
+
+      if (res?.success && res?.user) {
+        setUser(res.user);
+        if (res.user.avatar) {
+          setAvatarUrl(`${API_BASE_URL}${res.user.avatar}`);
+        }
+      } else {
+        alert(res?.message || "Falha ao atualizar avatar");
+      }
+    } catch (err) {
+      console.error("Erro ao atualizar avatar:", err);
+      alert("Erro ao atualizar avatar");
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = "";
     }
-    e.target.value = "";
   };
 
   return (
@@ -76,11 +112,20 @@ export default function Profile() {
 
         <div className="border-b border-gray-200 pb-6 mb-6 flex flex-col gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#00B04F] to-[#2196F3] flex items-center justify-center text-xl font-bold text-white shadow">
-              {displayName?.[0]?.toUpperCase() ||
-                user?.email?.[0]?.toUpperCase() ||
-                "U"}
-            </div>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="w-14 h-14 rounded-full object-cover bg-gray-200 shadow"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#00B04F] to-[#2196F3] flex items-center justify-center text-xl font-bold text-white shadow">
+                {displayName?.[0]?.toUpperCase() ||
+                  user?.email?.[0]?.toUpperCase() ||
+                  "U"}
+              </div>
+            )}
+
             <div>
               <div className="font-semibold text-base text-gray-900">
                 {displayName}
@@ -97,10 +142,11 @@ export default function Profile() {
             />
             <button
               onClick={onPickAvatar}
-              className="ml-auto px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center gap-1 text-xs border border-gray-200 shadow"
+              disabled={uploadingAvatar}
+              className="ml-auto px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center gap-1 text-xs border border-gray-200 shadow disabled:opacity-60"
             >
               <ImageIcon className="w-4 h-4" />
-              Alterar avatar
+              {uploadingAvatar ? "Enviando..." : "Alterar avatar"}
             </button>
           </div>
 
@@ -132,11 +178,17 @@ export default function Profile() {
           BoraProRacha© {new Date().getFullYear()}
         </div>
         <div className="flex gap-2">
-          <Link to="/terms-of-use" className="text-xs underline hover:text-[#00B04F]">
+          <Link
+            to="/terms-of-use"
+            className="text-xs underline hover:text-[#00B04F]"
+          >
             Termos de Uso
           </Link>
           <span>|</span>
-          <Link to="/privacy-policy" className="text-xs underline hover:text-[#2196F3]">
+          <Link
+            to="/privacy-policy"
+            className="text-xs underline hover:text-[#2196F3]"
+          >
             Política de Privacidade
           </Link>
         </div>
