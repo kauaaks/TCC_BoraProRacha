@@ -1,28 +1,30 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth, AuthProvider } from './contexts/AuthContext'
-import Login from './components/Login'
-import Layout from './components/Layout'
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth, AuthProvider } from "./contexts/AuthContext";
+import Login from "./components/Login";
+import Layout from "./components/Layout";
 
-import Dashboard from './pages/Dashboard'
-import AdminDashboard from './pages/AdminDashboard' // ⬅ painel novo
-import FieldsManager from './pages/FieldsManager'
-import MyTeam from './pages/MyTeam'
-import InviteAccept from './pages/InviteAccept'
-import Teams from './components/Teams'
-import Games from './components/Games'
-import Payments from './components/Payments'
-import Stats from './components/Stats'
-import Profile from './pages/Profile'
-import JoinTeam from './pages/invitations/join'
-import PrivacyPolicy from './pages/PrivacyPolicy'
-import TermsOfUse from './pages/TermsOfUse'
+import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import FieldsManager from "./pages/FieldsManager";
+import MyTeam from "./pages/MyTeam";
+import InviteAccept from "./pages/InviteAccept";
+import Teams from "./components/Teams";
+import Games from "./components/Games";
+import Payments from "./components/Payments";
+import Stats from "./components/Stats";
+import Profile from "./pages/Profile";
+import JoinTeam from "./pages/invitations/join";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfUse from "./pages/TermsOfUse";
 
-import PrivateRoute from './routes/PrivateRoute'
+import CriarTimeForm from "./components/forms/criarTimeForm";
 
-import './App.css'
+import PrivateRoute from "./routes/PrivateRoute";
+
+import "./App.css";
 
 function AppRoutes() {
-  const { user } = useAuth()
+  const { user } = useAuth();
 
   return (
     <Routes>
@@ -41,6 +43,8 @@ function AppRoutes() {
           </Layout>
         }
       />
+
+    
       <Route
         path="/terms-of-use"
         element={
@@ -73,11 +77,11 @@ function AppRoutes() {
         }
       />
 
-      {/* Painel Admin - apenas para admin */}
+      {/* Painel Admin - (se ainda quiser manter /admin) */}
       <Route
         path="/admin"
         element={
-          <PrivateRoute allowedTypes={['admin']}>
+          <PrivateRoute allowedTypes={["admin"]}>
             <Layout>
               <AdminDashboard />
             </Layout>
@@ -88,7 +92,7 @@ function AppRoutes() {
       <Route
         path="/fields"
         element={
-          <PrivateRoute allowedTypes={['gestor_campo']}>
+          <PrivateRoute allowedTypes={["gestor_campo"]}>
             <Layout>
               <FieldsManager />
             </Layout>
@@ -100,10 +104,21 @@ function AppRoutes() {
       <Route
         path="/my-team"
         element={
-          <PrivateRoute allowedTypes={['representante_time', 'jogador']}>
+          <PrivateRoute allowedTypes={["representante_time", "jogador"]}>
             <Layout>
               <MyTeam />
             </Layout>
+          </PrivateRoute>
+        }
+      />
+      {/* form de novo time (admin) */}
+        <Route
+          path="/teams/new"
+          element={
+            <PrivateRoute allowedTypes={["admin"]}>
+              <Layout>
+                <CriarTimeForm />
+              </Layout>
           </PrivateRoute>
         }
       />
@@ -169,10 +184,10 @@ function AppRoutes() {
         element={
           <PrivateRoute
             allowedTypes={[
-              'jogador',
-              'representante_time',
-              'admin',
-              'gestor_campo',
+              "jogador",
+              "representante_time",
+              "admin",
+              "gestor_campo",
             ]}
           >
             <Layout>
@@ -182,7 +197,7 @@ function AppRoutes() {
         }
       />
     </Routes>
-  )
+  );
 }
 
 function App() {
@@ -194,7 +209,7 @@ function App() {
         </div>
       </Router>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;
