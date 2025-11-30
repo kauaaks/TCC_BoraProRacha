@@ -51,9 +51,32 @@ async function deleteTeam(req, res) {
   }
 }
 
+// 🔹 Admin cria usuário (Firebase + Mongo + opcional vínculo a time)
+async function criarUsuarioAdmin(req, res) {
+  try {
+    const { nome, telefone, user_type, email, password, team_id } = req.body;
+
+    const result = await adminService.criarUsuarioAdmin({
+      nome,
+      telefone,
+      user_type,
+      email,
+      password,
+      team_id: team_id || null,
+    });
+
+    return res.status(201).json(result);
+  } catch (err) {
+    console.error("[Controller criarUsuarioAdmin] Erro:", err);
+    const status = err.status || 500;
+    return res.status(status).json({ error: err.message || "Erro interno" });
+  }
+}
+
 module.exports = {
   listarTimesFinanceiros,
   getTeamFinanceById,
   notifyTeam,
   deleteTeam,
+  criarUsuarioAdmin,
 };

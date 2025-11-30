@@ -4,23 +4,44 @@ const TeamMember = require("../models/team_members");
 const Notification = require("../models/notification");
 const teamService = require("./teamService");
 const Users = require("../models/user");
+const admin = require("../config/firebase"); // Firebase Admin SDK
+const userService = require("./userService"); // onde está criarUsuario
+const paymentService = require("./paymentService"); // este arquivo acima
+
+// helper para YYYY-MM do mês atual
+function getCurrentMonth() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${d.getFullYear()}-${m}`;
+}
 
 // 🔹 Lista todos os times com resumo financeiro (cards do admin)
 async function listarTimesFinanceiros() {
   try {
     const teams = await Teams.find().lean();
+    const month = getCurrentMonth();
 
     const teamsWithFinance = [];
 
     for (const team of teams) {
+      // garante payments para TODOS os membros deste time no mês atual
+      try {
+        await paymentService.listarPorTimeEMes({ team_id: team._id, month });
+      } catch (e) {
+        console.error(
+          "[Service] listarPorTimeEMes em listarTimesFinanceiros falhou:",
+          e?.message
+        );
+      }
+
       const pagamentos = await Payments.find({ team_id: team._id }).lean();
 
       const totalPago = pagamentos.filter((p) => p.status === "paid").length;
-      const totalPendente = pagamentos.filter(p => p.status === "unpaid").length;
+      const totalPendente = pagamentos.filter((p) => p.status === "unpaid").length;
 
       teamsWithFinance.push({
-        _id: team._id,             // usado no front para Detalhes
-        team_id: team._id,         // usado no front para Aviso / Deletar
+        _id: team._id, // usado no front para Detalhes
+        team_id: team._id, // usado no front para Aviso / Deletar
         nome: team.nome,
         mensalidade: team.monthly_fee,
         total_pago: totalPago,
@@ -36,18 +57,23 @@ async function listarTimesFinanceiros() {
   }
 }
 
-// 🔹 Detalhes financeiros de um time (modal: membros Pago / Não pago)
-// Usa Payments + populate em user_id para montar a lista de membros com status agregado.
+// 🔹 Detalhes financeiros de um time
 async function getTeamFinanceById(teamId) {
   const team = await Teams.findById(teamId).lean();
   if (!team) throw new Error("Time não encontrado");
 
-  // todos os pagamentos desse time, qualquer mês
+  // garante que todos os membros tenham Payment para o mês atual
+  const month = getCurrentMonth();
+  try {
+    await paymentService.listarPorTimeEMes({ team_id: teamId, month });
+  } catch (e) {
+    console.error("[Service] listarPorTimeEMes falhou (admin):", e?.message);
+  }
+
   const payments = await Payments.find({ team_id: teamId })
     .populate("user_id", "nome")
     .lean();
 
-  // uid -> { user_id, nome, status }
   const byUser = new Map();
 
   for (const p of payments) {
@@ -79,12 +105,10 @@ async function getTeamFinanceById(teamId) {
 }
 
 // 🔹 Envia aviso administrativo para os REPRESENTANTES do time
-// Usa o próprio documento de Teams (created_by + members com user_type 'representante_time')
 async function notifyTeam(teamId) {
   const team = await Teams.findById(teamId).lean();
   if (!team) throw new Error("Time não encontrado");
 
-  // pega todos firebaseUid de representantes daquele time
   const repFirebaseUids = new Set();
 
   if (
@@ -105,14 +129,12 @@ async function notifyTeam(teamId) {
 
   const repUidsArray = Array.from(repFirebaseUids);
   if (repUidsArray.length === 0) {
-    // não há representantes cadastrados nesse time
     return {
       team: team.nome,
       notified_count: 0,
     };
   }
 
-  // converte firebaseUid -> _id dos Users
   const reps = await Users.find({ firebaseUid: { $in: repUidsArray } }).lean();
   if (reps.length === 0) {
     return {
@@ -144,9 +166,85 @@ async function deleteTeamAsAdmin(teamId) {
   return await teamService.deletarTime(teamId);
 }
 
+// 🔹 Admin cria usuário no Firebase + Mongo e opcionalmente vincula a um time
+// Espera: { nome, telefone, user_type, email, password, team_id? }
+async function criarUsuarioAdmin({
+  nome,
+  telefone,
+  user_type,
+  email,
+  password,
+  team_id,
+}) {
+  if (!nome || !telefone || !user_type || !email || !password) {
+    const error = new Error(
+      "nome, telefone, user_type, email e password são obrigatórios"
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  // 1. Cria usuário no Firebase (Admin SDK)
+  const fbUser = await admin.auth().createUser({
+    email,
+    password,
+    displayName: nome,
+  });
+
+  const firebaseUid = fbUser.uid;
+
+  // 2. Cria usuário no Mongo usando sua service atual
+  const created = await userService.criarUsuario({
+    nome,
+    telefone,
+    user_type,
+    firebaseUid,
+  });
+
+  const user = created.user || created; // compatibilidade
+
+  // 3. Se tiver team_id e for jogador/representante, vincula no time
+  if (team_id && ["jogador", "representante_time"].includes(user_type)) {
+    const team = await Teams.findById(team_id);
+    if (!team) {
+      const error = new Error("Time informado não foi encontrado");
+      error.status = 404;
+      throw error;
+    }
+
+    if (!Array.isArray(team.members)) team.members = [];
+
+    const jaMembro = team.members.some(
+      (m) => String(m.uid) === String(firebaseUid)
+    );
+
+    if (!jaMembro) {
+      team.members.push({
+        uid: firebaseUid,
+        user_type,
+      });
+      await team.save();
+    }
+
+    // já garante payments do mês atual para esse time
+    try {
+      const month = getCurrentMonth();
+      await paymentService.listarPorTimeEMes({ team_id: team_id, month });
+    } catch (e) {
+      console.error(
+        "[Service] listarPorTimeEMes após criarUsuarioAdmin falhou:",
+        e?.message
+      );
+    }
+  }
+
+  return { user, firebaseUid };
+}
+
 module.exports = {
   listarTimesFinanceiros,
   getTeamFinanceById,
   notifyTeam,
   deleteTeamAsAdmin,
+  criarUsuarioAdmin,
 };

@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import {
   Card,
   CardContent,
@@ -13,19 +11,15 @@ import {
   BarChart3,
   CreditCard,
   Plus,
+  UserPlus,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminDashboard({ data }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user?.user_type !== "admin") {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
 
   const primeiroNome = (user?.nome || user?.displayName || "")
     .split(" ")[0]
@@ -36,7 +30,8 @@ export default function AdminDashboard({ data }) {
   const goToTeamsList = () => navigate("/teams");
   const goToNewTeam = () => navigate("/teams/new");
   const goToGames = () => navigate("/games");
-  const goToUsers = () => navigate("/users/usuarios"); 
+  const goToUsers = () => navigate("/profile"); // ajuste se tiver tela de gestão
+  const goToNewUser = () => navigate("/admin/users/new");
 
   const teamsCount = data?.teams?.length || 0;
   const usersCount = data?.users?.length || 0;
@@ -58,7 +53,9 @@ export default function AdminDashboard({ data }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Cards principais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Times */}
         <Card
           className="cursor-pointer hover:shadow-md transition"
           onClick={goToTeamsList}
@@ -72,21 +69,7 @@ export default function AdminDashboard({ data }) {
           </CardContent>
         </Card>
 
-        <Card
-          className="cursor-pointer hover:shadow-md transition"
-          onClick={goToUsers}
-        >
-          <CardHeader className="flex items-center justify-between">
-            <CardTitle>Usuários</CardTitle>
-            <Users className="w-5 h-5 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{usersCount}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Estatísticas (sem número) */}
         <Card
           className="cursor-pointer hover:shadow-md transition"
           onClick={goToStats}
@@ -102,6 +85,7 @@ export default function AdminDashboard({ data }) {
           </CardContent>
         </Card>
 
+        {/* Financeiro (sem número) */}
         <Card
           className="cursor-pointer hover:shadow-md transition"
           onClick={goToPayments}
@@ -116,8 +100,23 @@ export default function AdminDashboard({ data }) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Usuários */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition"
+          onClick={goToUsers}
+        >
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Usuários</CardTitle>
+            <Users className="w-5 h-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{usersCount}</div>
+          </CardContent>
+        </Card>
       </div>
 
+      {/* Ações rápidas */}
       <Card>
         <CardHeader>
           <CardTitle>Ações Rápidas</CardTitle>
@@ -125,6 +124,7 @@ export default function AdminDashboard({ data }) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Novo time */}
             <Button
               variant="outline"
               className="h-20 flex-col space-y-2"
@@ -134,6 +134,17 @@ export default function AdminDashboard({ data }) {
               <span className="text-sm">Novo time</span>
             </Button>
 
+            {/* Criar usuário */}
+            <Button
+              variant="outline"
+              className="h-20 flex-col space-y-2"
+              onClick={goToNewUser}
+            >
+              <UserPlus className="w-6 h-6" />
+              <span className="text-sm">Criar usuário</span>
+            </Button>
+
+            {/* Agendar jogo */}
             <Button
               variant="outline"
               className="h-20 flex-col space-y-2"
