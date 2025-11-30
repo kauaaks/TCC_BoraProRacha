@@ -16,7 +16,7 @@ import Profile from "./pages/Profile";
 import JoinTeam from "./pages/invitations/join";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
-
+import CriarUsuarioForm from "./components/forms/CriarUsuarioForm";
 import CriarTimeForm from "./components/forms/criarTimeForm";
 
 import PrivateRoute from "./routes/PrivateRoute";
@@ -76,7 +76,16 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
-
+      <Route
+        path="/admin/users/new"
+        element={
+          <PrivateRoute allowedTypes={["admin"]}>
+            <Layout>
+             <CriarUsuarioForm />
+            </Layout>
+          </PrivateRoute>
+       }
+      />
       {/* Painel Admin - (se ainda quiser manter /admin) */}
       <Route
         path="/admin"

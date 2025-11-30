@@ -11,6 +11,7 @@ import {
   BarChart3,
   CreditCard,
   Plus,
+  UserPlus,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,8 @@ export default function AdminDashboard({ data }) {
   const goToTeamsList = () => navigate("/teams");
   const goToNewTeam = () => navigate("/teams/new");
   const goToGames = () => navigate("/games");
-  const goToUsers = () => navigate("/profile"); // ou rota de gestão de usuários se tiver
+  const goToUsers = () => navigate("/profile"); // ajuste se tiver tela de gestão
+  const goToNewUser = () => navigate("/admin/users/new");
 
   const teamsCount = data?.teams?.length || 0;
   const usersCount = data?.users?.length || 0;
@@ -122,6 +124,7 @@ export default function AdminDashboard({ data }) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Novo time */}
             <Button
               variant="outline"
               className="h-20 flex-col space-y-2"
@@ -131,6 +134,17 @@ export default function AdminDashboard({ data }) {
               <span className="text-sm">Novo time</span>
             </Button>
 
+            {/* Criar usuário */}
+            <Button
+              variant="outline"
+              className="h-20 flex-col space-y-2"
+              onClick={goToNewUser}
+            >
+              <UserPlus className="w-6 h-6" />
+              <span className="text-sm">Criar usuário</span>
+            </Button>
+
+            {/* Agendar jogo */}
             <Button
               variant="outline"
               className="h-20 flex-col space-y-2"

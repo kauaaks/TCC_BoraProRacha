@@ -6,11 +6,7 @@ const { verifyFirebaseToken } = require("../middlewares/verifyFirebaseToken");
 const { attachUserRole } = require("../middlewares/attachUserRole");
 const { checkRole } = require("../middlewares/checkRole");
 
-const adminAuth = [
-  verifyFirebaseToken,
-  attachUserRole,
-  checkRole(["admin"]),
-];
+const adminAuth = [verifyFirebaseToken, attachUserRole, checkRole(["admin"])];
 
 router.get(
   "/teams/finance",
@@ -34,6 +30,13 @@ router.delete(
   "/teams/:id",
   adminAuth,
   adminController.deleteTeam
+);
+
+// 🔹 Admin cria usuário (Firebase + Mongo + opcional time)
+router.post(
+  "/users",
+  adminAuth,
+  adminController.criarUsuarioAdmin
 );
 
 module.exports = router;
