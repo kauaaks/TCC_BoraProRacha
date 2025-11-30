@@ -69,12 +69,12 @@ export default function Layout({ children }) {
 
     if (userType === "admin") {
       const filteredCommon = common.filter(
-        (item) => item.name !== "Jogos" && item.name !== "Times"
+        (item) =>
+          item.name !== "Jogos" &&
+          item.name !== "Times" &&
+          item.name !== "Administração"
       );
-      return [
-        ...filteredCommon,
-        { name: "Administração", href: "/admin", icon: Shield },
-      ];
+      return filteredCommon;
     }
 
     const filteredCommon = common.filter((item) => {

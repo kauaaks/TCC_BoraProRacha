@@ -27,6 +27,12 @@ export default function Profile() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef(null);
 
+  // 🔹 NOVOS ESTADOS PARA E-MAIL
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState(user?.email || "");
+  const [emailPassword, setEmailPassword] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+
   // se o back atualizar user.avatar (ex.: após login ou refresh), sincroniza
   useEffect(() => {
     if (user?.avatar) {
@@ -75,14 +81,13 @@ export default function Profile() {
     setAvatarUrl(localPreview);
 
     const fd = new FormData();
-    fd.append("avatar", file); // nome do campo esperado pelo back [web:409][web:465]
+    fd.append("avatar", file);
 
     try {
       setUploadingAvatar(true);
-      // novo endpoint do back: PATCH /perfil/avatar
       const res = await apiCall("/perfil/avatar", {
         method: "PATCH",
-        body: fd, // não setar Content-Type manualmente com FormData
+        body: fd,
       });
 
       if (res?.success && res?.user) {
@@ -99,6 +104,32 @@ export default function Profile() {
     } finally {
       setUploadingAvatar(false);
       e.target.value = "";
+    }
+  };
+
+  // 🔹 HANDLERS VISUAIS PARA E-MAIL (backend será plugado depois)
+  const openEmailModal = () => {
+    setNewEmail(user?.email || "");
+    setEmailPassword("");
+    setShowEmailModal(true);
+  };
+
+  const saveEmail = async () => {
+    try {
+      setEmailLoading(true);
+
+      // TODO: aqui o outro dev implementa:
+      // - reautenticação Firebase
+      // - updateEmail no Firebase Auth
+      // - atualização no Mongo via API
+      console.log("Salvar novo email:", newEmail, "com senha:", emailPassword);
+
+      // opcional: simular na UI até o backend ficar pronto
+      // setUser({ ...user, email: newEmail });
+
+      setShowEmailModal(false);
+    } finally {
+      setEmailLoading(false);
     }
   };
 
@@ -164,12 +195,21 @@ export default function Profile() {
             </button>
           </div>
 
+          {/* 🔹 LINHA DO E-MAIL COM BOTÃO */}
           <div className="flex items-center justify-between">
             <span className="font-normal text-sm text-gray-600 w-40">
               E-mail
             </span>
-            <span className="font-medium text-gray-800">{user?.email}</span>
-            <div className="w-28" />
+            <span className="font-medium text-gray-800 truncate max-w-xs">
+              {user?.email}
+            </span>
+            <button
+              onClick={openEmailModal}
+              className="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center gap-1 text-xs border border-gray-200 shadow"
+            >
+              <Pencil className="w-4 h-4" />
+              Mudar e-mail
+            </button>
           </div>
         </div>
 
@@ -217,6 +257,56 @@ export default function Profile() {
                 className="px-3 py-2 rounded bg-[#00B04F] text-white disabled:opacity-60"
               >
                 {loading ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔹 MODAL VISUAL DE ALTERAÇÃO DE E-MAIL */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-5 w-full max-w-sm">
+            <h3 className="font-semibold mb-3">Alterar e-mail</h3>
+
+            <label className="text-sm text-gray-700 mb-1 block">
+              Novo e-mail
+            </label>
+            <input
+              className="w-full border rounded px-3 py-2 mb-3"
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="novoemail@exemplo.com"
+            />
+
+            <label className="text-sm text-gray-700 mb-1 block">
+              Senha atual
+            </label>
+            <input
+              className="w-full border rounded px-3 py-2 mb-4"
+              type="password"
+              value={emailPassword}
+              onChange={(e) => setEmailPassword(e.target.value)}
+              placeholder="Digite sua senha"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="px-3 py-2 rounded border"
+                disabled={emailLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveEmail}
+                disabled={
+                  emailLoading || !newEmail.trim() || !emailPassword.trim()
+                }
+                className="px-3 py-2 rounded bg-[#00B04F] text-white disabled:opacity-60"
+              >
+                {emailLoading ? "Salvando..." : "Salvar"}
               </button>
             </div>
           </div>

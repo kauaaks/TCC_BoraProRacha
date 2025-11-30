@@ -8,6 +8,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 const toAbsolute = (u) => (u?.startsWith?.('http') ? u : `${API_BASE_URL}${u || ''}`)
 
+const formatDatePTBR = (dateString) => {
+  if (!dateString) return '--'
+  try {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(new Date(dateString))
+  } catch {
+    return '--'
+  }
+}
+
 const toLabel = (status, dueISO) => {
   if (status === 'paid') return 'Pago'
   if (status === 'awaiting_approval') return 'Aguardando Verificação'
@@ -434,14 +447,12 @@ export default function Financeiro() {
     }
   }
 
-  const cards = useMemo(() => {
+    const cards = useMemo(() => {
     return payments.map((payment) => {
       const label = toLabel(payment.status, payment.due)
-      const dueBR = payment.due ? new Date(payment.due).toLocaleDateString('pt-BR') : '--'
-      const paidOnBR = payment.paid_at
-        ? new Date(payment.paid_at).toLocaleDateString('pt-BR')
-        : null
-      const monthLabel = payment.month ? ymToLabel(payment.month) : payment.monthLabel || ''
+      const dueBR = formatDatePTBR(payment.due)           
+      const paidOnBR = formatDatePTBR(payment.paid_at)     
+      const monthLabel = payment.month ? ymToLabel(payment.month) : ''
       return { ...payment, label, dueBR, paidOnBR, monthLabel }
     })
   }, [payments])
@@ -522,6 +533,11 @@ export default function Financeiro() {
                   <span>{m.nome}</span>
                   <span className={m.status === 'paid' ? 'text-green-700' : 'text-red-700'}>
                     {m.status === 'paid' ? 'Pago' : 'Não pago'}
+                    {m.paid_at && (
+                      <span className="ml-2 text-xs text-gray-500">
+                        ({formatDatePTBR(m.paid_at)})
+                      </span>
+                    )}
                   </span>
                 </div>
               ))}
@@ -666,10 +682,7 @@ export default function Financeiro() {
                   </span>
                 </div>
                 <div className="text-gray-500 text-sm">
-                  Vencimento:{' '}
-                  {payment.due
-                    ? new Date(payment.due).toLocaleDateString('pt-BR')
-                    : '--'}
+                  Vencimento:{payment.dueBR}                 
                 </div>
                 <div className="text-gray-700 text-sm">
                   Valor: <span className="font-medium">{fmtBRL(payment.amount)}</span>
@@ -806,7 +819,7 @@ export default function Financeiro() {
             <h2 className="text-xl font-semibold">
               Membros — {ymToLabel(openMonth)}
             </h2>
-            <div className="w-64">
+            <div className="w-64 ml-auto">
               <Input
                 placeholder="Buscar membro"
                 value={searchMember}
@@ -828,12 +841,8 @@ export default function Financeiro() {
                 const label = toLabel(rawStatus, row.due_date)
                 const nome = row.user_id?.nome || 'Jogador'
                 const color = badgeColors[label] || 'bg-gray-100 text-gray-700'
-                const dueBR = row.due_date
-                  ? new Date(row.due_date).toLocaleDateString('pt-BR')
-                  : '--'
-                const paidAt = row.paid_at
-                  ? new Date(row.paid_at).toLocaleDateString('pt-BR')
-                  : null
+                const dueBR = formatDatePTBR(row.due_date)
+                const paidAt = row.paid_at ? formatDatePTBR(row.paid_at) : null 
                 const uid = row.user_id?._id || row.user_id
 
                 return (

@@ -178,8 +178,8 @@ export default function TeamRepDashboard({ data, teamId }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card variant="outline" onClick={goToMyTeams}>
-          <CardHeader>
+        <Card className="cursor-pointer hover:shadow-md transition" variant="outline" onClick={goToMyTeams}>
+          <CardHeader className="flex items-center">
             <CardTitle>Times</CardTitle>
             <Users />
           </CardHeader>
@@ -188,8 +188,8 @@ export default function TeamRepDashboard({ data, teamId }) {
           </CardContent>
         </Card>
 
-        <Card variant="outline" onClick={goToGames}>
-          <CardHeader>
+        <Card className="cursor-pointer hover:shadow-md transition" variant="outline" onClick={goToGames}>
+          <CardHeader className="flex items-center">
             <CardTitle>Jogos</CardTitle>
             <Calendar />
           </CardHeader>
@@ -198,8 +198,8 @@ export default function TeamRepDashboard({ data, teamId }) {
           </CardContent>
         </Card>
 
-        <Card variant="outline" onClick={goToPayments}>
-          <CardHeader>
+        <Card className="cursor-pointer hover:shadow-md transition" variant="outline" onClick={goToPayments}>
+          <CardHeader className="flex items-center">
             <CardTitle>Pagamentos</CardTitle>
             <CreditCard />
           </CardHeader>

@@ -52,29 +52,15 @@ export default function AdminDashboard({ data }) {
       </div>
 
       {/* Cards principais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Times */}
-        <Card
-          className="cursor-pointer hover:shadow-md transition"
-          onClick={goToTeamsList}
-        >
-          <CardHeader className="flex items-center justify-between">
-            <CardTitle>Times</CardTitle>
-            <Users className="w-5 h-5 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{teamsCount}</div>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Estatísticas (sem número) */}
         <Card
           className="cursor-pointer hover:shadow-md transition"
           onClick={goToStats}
         >
-          <CardHeader className="flex items-center justify-between">
-            <CardTitle>Estatísticas</CardTitle>
+          <CardHeader className="flex items-center">
             <BarChart3 className="w-5 h-5 text-primary" />
+            <CardTitle>Estatísticas</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-sm text-gray-500">
@@ -88,9 +74,9 @@ export default function AdminDashboard({ data }) {
           className="cursor-pointer hover:shadow-md transition"
           onClick={goToPayments}
         >
-          <CardHeader className="flex items-center justify-between">
-            <CardTitle>Financeiro</CardTitle>
+          <CardHeader className="flex items-center">
             <CreditCard className="w-5 h-5 text-primary" />
+            <CardTitle>Financeiro</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-sm text-gray-500">
@@ -104,9 +90,10 @@ export default function AdminDashboard({ data }) {
           className="cursor-pointer hover:shadow-md transition"
           onClick={goToUsers}
         >
-          <CardHeader className="flex items-center justify-between">
-            <CardTitle>Usuários</CardTitle>
+          <CardHeader className="flex items-center">
             <Users className="w-5 h-5 text-primary" />
+            <CardTitle>Usuários</CardTitle>
+            
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{usersCount}</div>
@@ -131,14 +118,7 @@ export default function AdminDashboard({ data }) {
               <span className="text-sm">Novo time</span>
             </Button>
 
-            <Button
-              variant="outline"
-              className="h-20 flex-col space-y-2"
-              onClick={goToGames}
-            >
-              <Calendar className="w-6 h-6" />
-              <span className="text-sm">Agendar jogo</span>
-            </Button>
+            
           </div>
         </CardContent>
       </Card>
