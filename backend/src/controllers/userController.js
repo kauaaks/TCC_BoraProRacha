@@ -1,128 +1,106 @@
 const userService = require("../services/userService");
 
-async function buscarUsuarioPorFirebaseUid(req, res) {
-  const { uid } = req.params;
-  console.log("[Controller] Buscar usuário por Firebase UID:", uid);
-
-  try {
-    let user = await userService.buscarUsuarioPorFirebaseUid(uid);
-    if (user) {
-      console.log("[Controller] Usuário encontrado:", user);
-      return res.status(200).json(user);
-    }
-
-    console.log("[Controller] Usuário não encontrado no Mongo, verificando Firebase...");
-
-    const firebaseUser = await userService.buscarUsuarioNoFirebase(uid);
-    if (!firebaseUser) {
-      return res.status(404).json({ error: "Usuário não encontrado nem no Mongo nem no Firebase" });
-    }
-
-    const firebaseUid = firebaseUser.uid || firebaseUser.firebaseUid || uid;
-    const nome = (firebaseUser.displayName || firebaseUser.nome || "Sem nome");
-    const telefone = "00000000000";
-    const user_type = "jogador";
-
-    const created = await userService.criarUsuario({
-      firebaseUid,
-      nome,
-      telefone,
-      user_type,
-      ativo: true,
-    });
-
-    console.log("[Controller] Usuário criado no Mongo a partir do Firebase:", created);
-    return res.status(201).json(created);
-  } catch (err) {
-    console.error("[Controller] Erro ao buscar/criar usuário:", err);
-    return res.status(500).json({ error: err.message });
-  }
-}
-
-async function criarUsuario(req, res) {
-  const { firebaseUid, nome, telefone, user_type } = req.body;
-  console.log("[Controller] Criar usuário, body recebido:", req.body);
-
-  if (!nome || !telefone || !user_type) {
-    return res.status(400).json({ error: "Preencha todos os campos obrigatórios" });
-  }
-
-  try {
-    const novoUser = await userService.criarUsuario({
-      firebaseUid,
-      nome,
-      telefone,
-      user_type,
-      ativo: true,
-    });
-
-    console.log("[Controller] Usuário criado com sucesso:", novoUser);
-    return res.status(201).json(novoUser);
-  } catch (err) {
-    console.error("[Controller] Erro ao criar usuário:", err);
-
-    if (err.message.includes("already exists") || err.message.includes("Email já cadastrado")) {
-      try {
-        const existingUser = await userService.buscarUsuarioPorFirebaseUid(firebaseUid);
-        console.log("[Controller] Usuário já existia, retornando existente:", existingUser);
-        return res.status(200).json(existingUser);
-      } catch (mongoErr) {
-        console.error("[Controller] Erro ao recuperar usuário existente:", mongoErr);
-        return res.status(500).json({ error: mongoErr.message });
-      }
-    }
-
-    return res.status(500).json({ error: err.message });
-  }
-}
-
 async function listarUsuarios(req, res) {
   try {
     const users = await userService.listarUsuarios();
     return res.status(200).json(users);
   } catch (err) {
-    console.error("[Controller] Erro ao listar usuários:", err);
-    return res.status(500).json({ error: err.message });
+    console.error("[Controller listarUsuarios] Erro:", err);
+    return res.status(500).json({ error: err.message || "Erro interno" });
+  }
+}
+
+async function criarUsuario(req, res) {
+  try {
+    const result = await userService.criarUsuario(req.body);
+    return res.status(201).json(result);
+  } catch (err) {
+    console.error("[Controller criarUsuario] Erro:", err);
+    return res.status(400).json({ error: err.message || "Erro interno" });
   }
 }
 
 async function atualizarUsuarioMe(req, res) {
   try {
-    if (!req.user || !req.user.uid) {
-      return res.status(401).json({ error: true, message: "Não autenticado" });
-    }
-    const user = await userService.atualizarUsuario(req.user.uid, req.body);
-    return res.json({ user });
-  } catch (e) {
-    return res.status(e.status || 400).json({ error: true, message: e.message });
+    const firebaseUidAutenticado = req.user?.uid;
+    const novosDados = req.body;
+
+    const user = await userService.atualizarUsuario(
+      firebaseUidAutenticado,
+      novosDados
+    );
+
+    return res.status(200).json(user);
+  } catch (err) {
+    console.error("[Controller atualizarUsuarioMe] Erro:", err);
+    const status = err.status || 500;
+    return res.status(status).json({ error: err.message || "Erro interno" });
   }
 }
 
 async function deletarUsuario(req, res) {
   try {
-    const result = await userService.deletarUsuario(req.params.id);
+    const { id } = req.params;
+    const result = await userService.deletarUsuario(id);
     return res.status(200).json(result);
   } catch (err) {
-    console.error("[Controller] Erro ao deletar usuário:", err);
-    return res.status(404).json({ error: err.message });
+    console.error("[Controller deletarUsuario] Erro:", err);
+    return res.status(400).json({ error: err.message || "Erro interno" });
   }
 }
 
 async function getUserStats(req, res) {
   try {
-    const stats = await userService.getUserStats(req.params.id);
+    const { uid } = req.params;
+    const stats = await userService.getUserStats(uid);
     return res.status(200).json(stats);
   } catch (err) {
-    console.error("[Controller] Erro ao obter estatísticas do usuário:", err);
-    return res.status(500).json({ error: err.message });
+    console.error("[Controller getUserStats] Erro:", err);
+    return res.status(500).json({ error: err.message || "Erro interno" });
+  }
+}
+
+async function buscarUsuarioPorFirebaseUid(req, res) {
+  try {
+    const { uid } = req.params;
+    const user = await userService.buscarUsuarioPorFirebaseUid(uid);
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+    return res.status(200).json(user);
+  } catch (err) {
+    console.error("[Controller buscarUsuarioPorFirebaseUid] Erro:", err);
+    return res.status(500).json({ error: err.message || "Erro interno" });
+  }
+}
+
+async function alterarEmailMe(req, res) {
+  try {
+    const { newEmail } = req.body;
+    const firebaseUid = req.user?.uid;
+
+    const result = await userService.alterarEmailFirebase({
+      firebaseUid,
+      newEmail,
+    });
+
+    return res.status(200).json({
+      message: "E-mail atualizado com sucesso. Verifique sua caixa de entrada.",
+      user: result,
+    });
+  } catch (err) {
+    console.error("[Controller alterarEmailMe] Erro:", err);
+    const status = err.status || 500;
+    return res.status(status).json({ error: err.message || "Erro interno" });
   }
 }
 
 module.exports = {
-  buscarUsuarioPorFirebaseUid,
-  criarUsuario,
   listarUsuarios,
+  criarUsuario,
   atualizarUsuarioMe,
   deletarUsuario,
   getUserStats,
+  buscarUsuarioPorFirebaseUid,
+  alterarEmailMe,
 };

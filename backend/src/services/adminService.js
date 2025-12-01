@@ -4,18 +4,16 @@ const TeamMember = require("../models/team_members");
 const Notification = require("../models/notification");
 const teamService = require("./teamService");
 const Users = require("../models/user");
-const admin = require("../config/firebase"); // Firebase Admin SDK
-const userService = require("./userService"); // onde está criarUsuario
-const paymentService = require("./paymentService"); // este arquivo acima
+const admin = require("../config/firebase");
+const userService = require("./userService");
+const paymentService = require("./paymentService");
 
-// helper para YYYY-MM do mês atual
 function getCurrentMonth() {
   const d = new Date();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   return `${d.getFullYear()}-${m}`;
 }
 
-// 🔹 Lista todos os times com resumo financeiro (cards do admin)
 async function listarTimesFinanceiros() {
   try {
     const teams = await Teams.find().lean();
@@ -24,7 +22,6 @@ async function listarTimesFinanceiros() {
     const teamsWithFinance = [];
 
     for (const team of teams) {
-      // garante payments para TODOS os membros deste time no mês atual
       try {
         await paymentService.listarPorTimeEMes({ team_id: team._id, month });
       } catch (e) {
@@ -35,18 +32,28 @@ async function listarTimesFinanceiros() {
       }
 
       const pagamentos = await Payments.find({ team_id: team._id }).lean();
+      const userIds = new Set(pagamentos.map((p) => String(p.user_id)));
 
-      const totalPago = pagamentos.filter((p) => p.status === "paid").length;
-      const totalPendente = pagamentos.filter((p) => p.status === "unpaid").length;
+      let totalPago = 0;
+      let totalNaoPago = 0;
+
+      for (const uid of userIds) {
+        const paysDoUser = pagamentos.filter(
+          (p) => String(p.user_id) === uid
+        );
+        const algumPago = paysDoUser.some((p) => p.status === "paid");
+        if (algumPago) totalPago += 1;
+        else totalNaoPago += 1;
+      }
 
       teamsWithFinance.push({
-        _id: team._id, // usado no front para Detalhes
-        team_id: team._id, // usado no front para Aviso / Deletar
+        _id: team._id, 
+        team_id: team._id, 
         nome: team.nome,
         mensalidade: team.monthly_fee,
         total_pago: totalPago,
-        total_pendente: totalPendente,
-        total_registros: pagamentos.length,
+        total_pendente: totalNaoPago,
+        total_registros: userIds.size, 
       });
     }
 
@@ -57,12 +64,10 @@ async function listarTimesFinanceiros() {
   }
 }
 
-// 🔹 Detalhes financeiros de um time
 async function getTeamFinanceById(teamId) {
   const team = await Teams.findById(teamId).lean();
   if (!team) throw new Error("Time não encontrado");
 
-  // garante que todos os membros tenham Payment para o mês atual
   const month = getCurrentMonth();
   try {
     await paymentService.listarPorTimeEMes({ team_id: teamId, month });
@@ -104,7 +109,6 @@ async function getTeamFinanceById(teamId) {
   };
 }
 
-// 🔹 Envia aviso administrativo para os REPRESENTANTES do time
 async function notifyTeam(teamId) {
   const team = await Teams.findById(teamId).lean();
   if (!team) throw new Error("Time não encontrado");
@@ -161,13 +165,10 @@ async function notifyTeam(teamId) {
   };
 }
 
-// 🔹 Deleta time como admin
 async function deleteTeamAsAdmin(teamId) {
   return await teamService.deletarTime(teamId);
 }
 
-// 🔹 Admin cria usuário no Firebase + Mongo e opcionalmente vincula a um time
-// Espera: { nome, telefone, user_type, email, password, team_id? }
 async function criarUsuarioAdmin({
   nome,
   telefone,
@@ -184,7 +185,6 @@ async function criarUsuarioAdmin({
     throw error;
   }
 
-  // 1. Cria usuário no Firebase (Admin SDK)
   const fbUser = await admin.auth().createUser({
     email,
     password,
@@ -193,7 +193,6 @@ async function criarUsuarioAdmin({
 
   const firebaseUid = fbUser.uid;
 
-  // 2. Cria usuário no Mongo usando sua service atual
   const created = await userService.criarUsuario({
     nome,
     telefone,
@@ -201,9 +200,8 @@ async function criarUsuarioAdmin({
     firebaseUid,
   });
 
-  const user = created.user || created; // compatibilidade
+  const user = created.user || created; 
 
-  // 3. Se tiver team_id e for jogador/representante, vincula no time
   if (team_id && ["jogador", "representante_time"].includes(user_type)) {
     const team = await Teams.findById(team_id);
     if (!team) {
@@ -226,7 +224,6 @@ async function criarUsuarioAdmin({
       await team.save();
     }
 
-    // já garante payments do mês atual para esse time
     try {
       const month = getCurrentMonth();
       await paymentService.listarPorTimeEMes({ team_id: team_id, month });

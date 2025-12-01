@@ -3,7 +3,8 @@ const GameStats = require("../models/game_stats");
 const admin = require("../config/firebase");
 const allowedRoles = ["admin", "representante_time", "gestor_campo", "jogador"];
 
-// Estatísticas
+const USERS_UID_FIELD = "firebaseUid";
+
 async function getUserStats(userId) {
   const stats = await GameStats.find({ firebaseUid: userId });
   if (!stats || stats.length === 0) {
@@ -45,7 +46,6 @@ async function getUserStats(userId) {
   return total;
 }
 
-// CRUD básico Mongo
 async function listarUsuarios() {
   return await User.find();
 }
@@ -60,23 +60,20 @@ async function buscarUsuarioPorFirebaseUid(firebaseUid) {
   }
 }
 
-// Consulta ao Firebase Admin (UserRecord) e harmonização de ausência
 async function buscarUsuarioNoFirebase(firebaseUid) {
   try {
-    const rec = await admin.auth().getUser(firebaseUid); // retorna UserRecord quando existe [web:254]
-    // Se também existir no Mongo, priorize o doc local
+    const rec = await admin.auth().getUser(firebaseUid);
     const doc = await User.findOne({ firebaseUid });
     if (doc) return doc;
-    // Retorne objeto “UserRecord-like” com chaves esperadas pelo controller
     return {
       uid: rec.uid,
       displayName: rec.displayName || "",
       email: rec.email || null,
-      _fromFirebase: true
+      _fromFirebase: true,
     };
   } catch (err) {
-    if (err?.code === 'auth/user-not-found') return null; // ausência → 404 no controller [web:255]
-    throw err; // outros erros do Admin devem propagar
+    if (err?.code === "auth/user-not-found") return null;
+    throw err;
   }
 }
 
@@ -117,7 +114,6 @@ async function criarUsuario(dados) {
   }
 }
 
-// Atualização com whitelisting
 const ALLOW_UPDATE = new Set(["nome", "telefone", "ativo", "user_type"]);
 
 function pickAllowed(data) {
@@ -142,7 +138,9 @@ async function atualizarUsuario(firebaseUidAutenticado, novosDados) {
 
   if (Object.prototype.hasOwnProperty.call(update, "user_type")) {
     if (!allowedRoles.includes(update.user_type)) {
-      const err = new Error(`Função inválida. Permitidas: ${allowedRoles.join(", ")}`);
+      const err = new Error(
+        `Função inválida. Permitidas: ${allowedRoles.join(", ")}`
+      );
       err.status = 400;
       throw err;
     }
@@ -168,6 +166,31 @@ async function deletarUsuario(id) {
   return { message: "Usuário deletado com sucesso" };
 }
 
+async function alterarEmailFirebase({ firebaseUid, newEmail }) {
+  if (!newEmail) {
+    const err = new Error("Novo e-mail é obrigatório");
+    err.status = 400;
+    throw err;
+  }
+
+  try {
+    const fbUser = await admin.auth().updateUser(firebaseUid, {
+      email: newEmail,
+      emailVerified: false,
+    });
+
+    return {
+      uid: fbUser.uid,
+      email: fbUser.email,
+    };
+  } catch (e) {
+    console.error("[Service alterarEmailFirebase] Erro:", e);
+    const err = new Error("Não foi possível atualizar o e-mail no Firebase");
+    err.status = 400;
+    throw err;
+  }
+}
+
 module.exports = {
   listarUsuarios,
   criarUsuario,
@@ -175,5 +198,6 @@ module.exports = {
   deletarUsuario,
   getUserStats,
   buscarUsuarioPorFirebaseUid,
-  buscarUsuarioNoFirebase
+  buscarUsuarioNoFirebase,
+  alterarEmailFirebase,
 };

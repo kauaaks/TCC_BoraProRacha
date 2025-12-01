@@ -8,18 +8,15 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export default function Profile() {
   const { user, apiCall, setUser } = useAuth();
 
-  // exibição
   const displayName = user?.nome || user?.displayName || "";
   const username =
     user?.username ||
     (displayName?.replace(/\s/g, "").toLowerCase() ||
       user?.email?.split("@")[0]);
 
-  // avatar vindo do back (se existir)
   const initialAvatar =
     user?.avatar ? `${API_BASE_URL}${user.avatar}` : undefined;
 
-  // estado local
   const [showNameModal, setShowNameModal] = useState(false);
   const [name, setName] = useState(displayName);
   const [loading, setLoading] = useState(false);
@@ -27,13 +24,11 @@ export default function Profile() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef(null);
 
-  // 🔹 NOVOS ESTADOS PARA E-MAIL
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail, setNewEmail] = useState(user?.email || "");
   const [emailPassword, setEmailPassword] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
 
-  // se o back atualizar user.avatar (ex.: após login ou refresh), sincroniza
   useEffect(() => {
     if (user?.avatar) {
       setAvatarUrl(`${API_BASE_URL}${user.avatar}`);
@@ -76,7 +71,6 @@ export default function Profile() {
       return;
     }
 
-    // preview otimista no front
     const localPreview = URL.createObjectURL(file);
     setAvatarUrl(localPreview);
 
@@ -107,7 +101,6 @@ export default function Profile() {
     }
   };
 
-  // 🔹 HANDLERS VISUAIS PARA E-MAIL (backend será plugado depois)
   const openEmailModal = () => {
     setNewEmail(user?.email || "");
     setEmailPassword("");
@@ -115,23 +108,35 @@ export default function Profile() {
   };
 
   const saveEmail = async () => {
-    try {
-      setEmailLoading(true);
+  try {
+    setEmailLoading(true);
 
-      // TODO: aqui o outro dev implementa:
-      // - reautenticação Firebase
-      // - updateEmail no Firebase Auth
-      // - atualização no Mongo via API
-      console.log("Salvar novo email:", newEmail, "com senha:", emailPassword);
+    const res = await apiCall("/users/me/email", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newEmail }),
+    });
 
-      // opcional: simular na UI até o backend ficar pronto
-      // setUser({ ...user, email: newEmail });
-
-      setShowEmailModal(false);
-    } finally {
-      setEmailLoading(false);
+    if (res?.error) {
+      alert(res.error || "Não foi possível atualizar o e-mail");
+      return;
     }
-  };
+
+    if (res?.user?.email) {
+      setUser((prev) => ({
+        ...prev,
+        email: res.user.email,
+      }));
+    }
+
+    setShowEmailModal(false);
+  } catch (err) {
+    console.error("Erro ao atualizar e-mail:", err);
+    alert("Erro ao atualizar e-mail");
+  } finally {
+    setEmailLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center py-14 px-4">
@@ -195,7 +200,6 @@ export default function Profile() {
             </button>
           </div>
 
-          {/* 🔹 LINHA DO E-MAIL COM BOTÃO */}
           <div className="flex items-center justify-between">
             <span className="font-normal text-sm text-gray-600 w-40">
               E-mail
@@ -263,7 +267,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* 🔹 MODAL VISUAL DE ALTERAÇÃO DE E-MAIL */}
       {showEmailModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-5 w-full max-w-sm">

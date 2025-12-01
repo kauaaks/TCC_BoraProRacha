@@ -26,22 +26,22 @@ function TournamentBracket({ tournament, squads, userUid }) {
   }
 
   const rounds = {
-    quartas: tournament.matches.filter(m => m.round === "quartas"),
-    semis: tournament.matches.filter(m => m.round === "semis"),
-    final: tournament.matches.filter(m => m.round === "final"),
-    terceiro_lugar: tournament.matches.filter(m => m.round === "terceiro_lugar"),
+    pre: tournament.matches.filter((m) => m.round === "pre"),
+    quartas: tournament.matches.filter((m) => m.round === "quartas"),
+    semis: tournament.matches.filter((m) => m.round === "semis"),
+    final: tournament.matches.filter((m) => m.round === "final"),
+    terceiro_lugar: tournament.matches.filter((m) => m.round === "terceiro_lugar"),
   };
 
+  const hasPre = rounds.pre.length > 0;
   const hasQuartas = rounds.quartas.length > 0;
 
-  const getSquadByIndex = (index) => {
-    return squads[index];
-  };
+  const getSquadByIndex = (index) => squads[index];
 
   const isUserInSquad = (squadIndex) => {
     const squad = getSquadByIndex(squadIndex);
     if (!squad) return false;
-    return squad.players.some(p => p.id === userUid || p.uid === userUid);
+    return squad.players.some((p) => p.id === userUid || p.uid === userUid);
   };
 
   const MatchCard = ({ match }) => {
@@ -53,15 +53,18 @@ function TournamentBracket({ tournament, squads, userUid }) {
     return (
       <div className="border rounded-lg p-3 bg-white shadow-sm min-w-[200px]">
         <div className="text-xs text-gray-500 text-center mb-2 font-semibold">
-          {match.round === "semis" && "Semifinal"}
+          {match.round === "pre" && "Pré-jogo"}
           {match.round === "quartas" && "Quartas"}
+          {match.round === "semis" && "Semifinal"}
           {match.round === "final" && "Final"}
           {match.round === "terceiro_lugar" && "3º Lugar"}
         </div>
-        
-        <div className={`flex items-center justify-between p-2 rounded ${
-          isTeam1User ? "bg-green-50 border border-green-200" : "bg-gray-50"
-        } ${match.winner_squadIndex === team1.squadIndex ? "font-bold" : ""}`}>
+
+        <div
+          className={`flex items-center justify-between p-2 rounded ${
+            isTeam1User ? "bg-green-50 border border-green-200" : "bg-gray-50"
+          } ${match.winner_squadIndex === team1.squadIndex ? "font-bold" : ""}`}
+        >
           <span className="text-sm truncate">{team1.name}</span>
           {match.played && (
             <span className="text-sm font-bold ml-2">{match.goals_team1 ?? "-"}</span>
@@ -70,9 +73,11 @@ function TournamentBracket({ tournament, squads, userUid }) {
 
         <div className="text-center text-xs text-gray-400 my-1">vs</div>
 
-        <div className={`flex items-center justify-between p-2 rounded ${
-          isTeam2User ? "bg-green-50 border border-green-200" : "bg-gray-50"
-        } ${match.winner_squadIndex === team2.squadIndex ? "font-bold" : ""}`}>
+        <div
+          className={`flex items-center justify-between p-2 rounded ${
+            isTeam2User ? "bg-green-50 border border-green-200" : "bg-gray-50"
+          } ${match.winner_squadIndex === team2.squadIndex ? "font-bold" : ""}`}
+        >
           <span className="text-sm truncate">{team2.name}</span>
           {match.played && (
             <span className="text-sm font-bold ml-2">{match.goals_team2 ?? "-"}</span>
@@ -97,11 +102,20 @@ function TournamentBracket({ tournament, squads, userUid }) {
 
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-8 items-start min-w-max">
+          {hasPre && (
+            <div className="space-y-4">
+              <div className="text-sm font-semibold text-gray-700 text-center">Pré-jogo</div>
+              {rounds.pre.map((match, idx) => (
+                <MatchCard key={`pre-${idx}`} match={match} />
+              ))}
+            </div>
+          )}
+
           {hasQuartas && (
             <div className="space-y-4">
               <div className="text-sm font-semibold text-gray-700 text-center">Quartas</div>
               {rounds.quartas.map((match, idx) => (
-                <MatchCard key={idx} match={match} />
+                <MatchCard key={`q-${idx}`} match={match} />
               ))}
             </div>
           )}
@@ -110,7 +124,7 @@ function TournamentBracket({ tournament, squads, userUid }) {
             <div className="space-y-4">
               <div className="text-sm font-semibold text-gray-700 text-center">Semifinais</div>
               {rounds.semis.map((match, idx) => (
-                <MatchCard key={idx} match={match} />
+                <MatchCard key={`s-${idx}`} match={match} />
               ))}
             </div>
           )}
@@ -120,15 +134,17 @@ function TournamentBracket({ tournament, squads, userUid }) {
               <div>
                 <div className="text-sm font-semibold text-gray-700 text-center mb-2">Final</div>
                 {rounds.final.map((match, idx) => (
-                  <MatchCard key={idx} match={match} />
+                  <MatchCard key={`f-${idx}`} match={match} />
                 ))}
               </div>
             )}
             {rounds.terceiro_lugar.length > 0 && (
               <div className="mt-4">
-                <div className="text-sm font-semibold text-gray-700 text-center mb-2">3º Lugar</div>
+                <div className="text-sm font-semibold text-gray-700 text-center mb-2">
+                  3º Lugar
+                </div>
                 {rounds.terceiro_lugar.map((match, idx) => (
-                  <MatchCard key={idx} match={match} />
+                  <MatchCard key={`3-${idx}`} match={match} />
                 ))}
               </div>
             )}
@@ -188,16 +204,16 @@ export default function GamesJogador() {
       setLoading(true);
       const response = await apiCall("/teams/meustimes");
       const data = response?.teams || response || [];
-      
+
       const teamsWithPlayers = await Promise.all(
         data.map(async (team) => {
           try {
             const teamData = await apiCall(`/teams/${team._id || team.id}`);
             const members = teamData?.members || [];
-            return { 
-              ...team, 
+            return {
+              ...team,
               players: members,
-              playersCount: members.length
+              playersCount: members.length,
             };
           } catch (error) {
             console.error(`Erro ao buscar membros do time ${team._id}:`, error);
@@ -205,7 +221,7 @@ export default function GamesJogador() {
           }
         })
       );
-      
+
       setMyTeams(teamsWithPlayers);
     } catch (error) {
       console.error("Erro ao carregar times:", error);
@@ -219,14 +235,14 @@ export default function GamesJogador() {
       setLoading(true);
 
       const gamesData = await apiCall(`/panelao/teams/${teamId}`);
-      
+
       const processedGames = (gamesData || [])
-        .map(game => {
+        .map((game) => {
           let mySquad = null;
           if (game.squads && Array.isArray(game.squads)) {
-            mySquad = game.squads.find(squad => 
-              squad.players.some(player => 
-                player.id === userUid || player.uid === userUid
+            mySquad = game.squads.find((squad) =>
+              squad.players.some(
+                (player) => player.id === userUid || player.uid === userUid
               )
             );
           }
@@ -235,7 +251,7 @@ export default function GamesJogador() {
           return {
             ...game,
             mySquad,
-            date: scheduledDate.toISOString().split('T')[0],
+            date: scheduledDate.toISOString().split("T")[0],
             time: scheduledDate.toTimeString().substring(0, 5),
           };
         })
@@ -262,13 +278,15 @@ export default function GamesJogador() {
     setDetailGame(null);
   };
 
-  const proximosJogos = useMemo(() => {
-    return games.filter(g => g.status !== "terminado");
-  }, [games]);
+  const proximosJogos = useMemo(
+    () => games.filter((g) => g.status !== "terminado"),
+    [games]
+  );
 
-  const jogosAnteriores = useMemo(() => {
-    return games.filter(g => g.status === "terminado");
-  }, [games]);
+  const jogosAnteriores = useMemo(
+    () => games.filter((g) => g.status === "terminado"),
+    [games]
+  );
 
   if (loading && myTeams.length === 0) {
     return (
@@ -284,7 +302,8 @@ export default function GamesJogador() {
         <header className="space-y-1">
           <h1 className="text-3xl font-bold text-gray-900">Meus Jogos</h1>
           <p className="text-gray-600">
-            Você ainda não faz parte de nenhum time. Entre em um time para ver seus jogos.
+            Você ainda não faz parte de nenhum time. Entre em um time para ver
+            seus jogos.
           </p>
         </header>
         <Card>
@@ -304,7 +323,8 @@ export default function GamesJogador() {
         <header className="space-y-1">
           <h1 className="text-3xl font-bold text-gray-900">Meus Jogos</h1>
           <p className="text-gray-600">
-            Olá {firstName || "jogador"}, selecione um time para ver seus jogos e panelas.
+            Olá {firstName || "jogador"}, selecione um time para ver seus jogos
+            e panelas.
           </p>
         </header>
 
@@ -312,7 +332,7 @@ export default function GamesJogador() {
           {myTeams.map((team) => {
             const id = String(team._id || team.id);
             const playersCount = team.playersCount || team.players?.length || 0;
-            
+
             return (
               <div
                 key={id}
@@ -324,9 +344,12 @@ export default function GamesJogador() {
                     <Users className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">{team.nome || team.name}</div>
+                    <div className="font-semibold text-gray-900">
+                      {team.nome || team.name}
+                    </div>
                     <div className="text-xs text-gray-500">
-                      {playersCount} {playersCount === 1 ? 'jogador' : 'jogadores'}
+                      {playersCount}{" "}
+                      {playersCount === 1 ? "jogador" : "jogadores"}
                     </div>
                   </div>
                 </div>
@@ -353,7 +376,9 @@ export default function GamesJogador() {
     );
   }
 
-  const currentTeam = myTeams.find((t) => String(t._id || t.id) === String(selectedTeam));
+  const currentTeam = myTeams.find(
+    (t) => String(t._id || t.id) === String(selectedTeam)
+  );
 
   return (
     <div className="space-y-6 fade-in">
@@ -373,14 +398,17 @@ export default function GamesJogador() {
           {currentTeam?.nome || currentTeam?.name || "Meus Jogos"}
         </h1>
         <p className="text-gray-600">
-          {firstName || "Jogador"}, veja seus próximos jogos, horário, local e a que panela você pertence.
+          {firstName || "Jogador"}, veja seus próximos jogos, horário, local e
+          a que panela você pertence.
         </p>
       </header>
 
       <Card>
         <CardHeader>
           <CardTitle>Próximos jogos</CardTitle>
-          <CardDescription>Jogos em que você está inscrito como jogador.</CardDescription>
+          <CardDescription>
+            Jogos em que você está inscrito como jogador.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -389,13 +417,14 @@ export default function GamesJogador() {
             </div>
           ) : proximosJogos.length === 0 ? (
             <p className="text-sm text-gray-500">
-              Você ainda não tem jogos agendados. Aguarde seu representante marcar a próxima pelada.
+              Você ainda não tem jogos agendados. Aguarde seu representante
+              marcar a próxima pelada.
             </p>
           ) : (
             <div className="space-y-4">
               {proximosJogos.map((game) => (
-                <Card 
-                  key={game._id || game.id} 
+                <Card
+                  key={game._id || game.id}
                   className="border rounded-xl shadow-sm cursor-pointer hover:shadow-lg transition"
                   onClick={() => openDetailModal(game)}
                 >
@@ -404,7 +433,9 @@ export default function GamesJogador() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-gray-800 font-semibold">
                           <Calendar className="w-4 h-4 text-green-700" />
-                          <span>{formatDateLabel(game.date, game.time)}</span>
+                          <span>
+                            {formatDateLabel(game.date, game.time)}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-600 text-sm">
                           <MapPin className="w-4 h-4" />
@@ -415,10 +446,13 @@ export default function GamesJogador() {
                         <StatusBadgePlayer status={game.status} />
                         {game.mySquad ? (
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">Sua panela:</span>
-                            <span 
+                            <span className="text-xs text-gray-500">
+                              Sua panela:
+                            </span>
+                            <span
                               className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
-                                game.mySquad.color?.badge || "bg-green-100 text-green-800"
+                                game.mySquad.color?.badge ||
+                                "bg-green-100 text-green-800"
                               }`}
                             >
                               <Shirt className="w-3 h-3" />
@@ -494,7 +528,9 @@ export default function GamesJogador() {
 
             <header className="mb-4">
               <h2 className="text-xl font-bold text-gray-900">
-                {detailGame.status === "terminado" ? "Resultado do Jogo" : "Detalhes do Jogo"}
+                {detailGame.status === "terminado"
+                  ? "Resultado do Jogo"
+                  : "Detalhes do Jogo"}
               </h2>
               <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
                 <Calendar className="w-4 h-4" />
@@ -504,42 +540,56 @@ export default function GamesJogador() {
               </p>
             </header>
 
-            
-            {detailGame.status === "terminado" && !detailGame.tournament && detailGame.squads?.length === 2 && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                {detailGame.goals_team1 != null && detailGame.goals_team2 != null ? (
-                  <>
-                    <div className="flex items-center justify-center gap-8">
-                      <div className="text-center">
-                        <div className="text-xs text-gray-600 mb-1">{detailGame.squads[0]?.name}</div>
-                        <div className="text-3xl font-bold text-gray-900">{detailGame.goals_team1}</div>
+            {detailGame.status === "terminado" &&
+              !detailGame.tournament &&
+              detailGame.squads?.length === 2 && (
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  {detailGame.goals_team1 != null &&
+                  detailGame.goals_team2 != null ? (
+                    <>
+                      <div className="flex items-center justify-center gap-8">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 mb-1">
+                            {detailGame.squads[0]?.name}
+                          </div>
+                          <div className="text-3xl font-bold text-gray-900">
+                            {detailGame.goals_team1}
+                          </div>
+                        </div>
+                        <div className="text-2xl text-gray-400">×</div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 mb-1">
+                            {detailGame.squads[1]?.name}
+                          </div>
+                          <div className="text-3xl font-bold text-gray-900">
+                            {detailGame.goals_team2}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-2xl text-gray-400">×</div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-600 mb-1">{detailGame.squads[1]?.name}</div>
-                        <div className="text-3xl font-bold text-gray-900">{detailGame.goals_team2}</div>
-                      </div>
+                      {detailGame.winner_squad_index != null && (
+                        <div className="text-center mt-3">
+                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-sm font-semibold">
+                            <Trophy className="w-4 h-4" />
+                            Vencedor:{" "}
+                            {
+                              detailGame.squads[detailGame.winner_squad_index]
+                                ?.name
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center text-gray-500 text-sm">
+                      Placar ainda não registrado
                     </div>
-                    {detailGame.winner_squad_index != null && (
-                      <div className="text-center mt-3">
-                        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-sm font-semibold">
-                          <Trophy className="w-4 h-4" />
-                          Vencedor: {detailGame.squads[detailGame.winner_squad_index]?.name}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-center text-gray-500 text-sm">
-                    Placar ainda não registrado
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
 
             {detailGame.tournament && detailGame.squads ? (
-              <TournamentBracket 
-                tournament={detailGame.tournament} 
+              <TournamentBracket
+                tournament={detailGame.tournament}
                 squads={detailGame.squads}
                 userUid={userUid}
               />
@@ -550,10 +600,10 @@ export default function GamesJogador() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {detailGame.squads.map((squad, idx) => {
-                    const isMySquad = squad.players.some(p => 
-                      p.id === userUid || p.uid === userUid
+                    const isMySquad = squad.players.some(
+                      (p) => p.id === userUid || p.uid === userUid
                     );
-                    
+
                     return (
                       <div
                         key={idx}
@@ -562,7 +612,9 @@ export default function GamesJogador() {
                         }`}
                       >
                         <div
-                          className={`${squad.color?.class || "bg-gray-600"} text-white px-3 py-2 flex items-center justify-between`}
+                          className={`${
+                            squad.color?.class || "bg-gray-600"
+                          } text-white px-3 py-2 flex items-center justify-between`}
                         >
                           <span className="font-semibold">{squad.name}</span>
                           <span className="text-xs flex items-center gap-1">
@@ -572,15 +624,20 @@ export default function GamesJogador() {
                         </div>
                         <div className="p-3 space-y-1 text-sm">
                           {squad.players.map((p) => {
-                            const isMe = p.id === userUid || p.uid === userUid;
+                            const isMe =
+                              p.id === userUid || p.uid === userUid;
                             return (
-                              <div 
-                                key={p.id} 
+                              <div
+                                key={p.id}
                                 className={`flex items-center justify-between ${
-                                  isMe ? "font-semibold text-appsociety-green" : ""
+                                  isMe
+                                    ? "font-semibold text-appsociety-green"
+                                    : ""
                                 }`}
                               >
-                                <span>{p.name} {isMe && "(Você)"}</span>
+                                <span>
+                                  {p.name} {isMe && "(Você)"}
+                                </span>
                               </div>
                             );
                           })}

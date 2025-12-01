@@ -1,7 +1,6 @@
 const Panelao = require('../models/panelao');
 const Times = require('../models/teams');
 
-// Fisher–Yates pra embaralhar array
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -10,10 +9,9 @@ function shuffle(array) {
   return array;
 }
 
-// Inicializa torneio quando sortear panelas com mais de 2 times
 function initializeTournament(squads) {
   const numTeams = squads.length;
-  
+
   if (numTeams <= 2) {
     return null;
   }
@@ -27,14 +25,14 @@ function initializeTournament(squads) {
       matchNumber: matchNumber++,
       team1: { squadIndex: 0, name: squads[0].name },
       team2: { squadIndex: 1, name: squads[1].name },
-      played: false
+      played: false,
     });
     matches.push({
       round: "semis",
       matchNumber: matchNumber++,
       team1: { squadIndex: 2, name: squads[2].name },
       team2: { squadIndex: 3, name: squads[3].name },
-      played: false
+      played: false,
     });
   }
 
@@ -44,20 +42,44 @@ function initializeTournament(squads) {
       matchNumber: matchNumber++,
       team1: { squadIndex: 1, name: squads[1].name },
       team2: { squadIndex: 2, name: squads[2].name },
-      played: false
+      played: false,
     });
   }
 
-  if (numTeams === 5 || numTeams === 6) {
-    for (let i = 0; i < Math.floor(numTeams / 2); i++) {
-      matches.push({
-        round: "quartas",
-        matchNumber: matchNumber++,
-        team1: { squadIndex: i * 2, name: squads[i * 2].name },
-        team2: { squadIndex: i * 2 + 1, name: squads[i * 2 + 1].name },
-        played: false
-      });
-    }
+  if (numTeams === 5) {
+    matches.push({
+      round: "pre",
+      matchNumber: matchNumber++,
+      team1: { squadIndex: 0, name: squads[0].name },
+      team2: { squadIndex: 1, name: squads[1].name },
+      played: false,
+    });
+  }
+
+  if (numTeams === 6) {
+    matches.push({
+      round: "quartas",
+      matchNumber: matchNumber++,
+      team1: { squadIndex: 0, name: squads[0].name },
+      team2: { squadIndex: 5, name: squads[5].name },
+      played: false,
+    });
+
+    matches.push({
+      round: "quartas",
+      matchNumber: matchNumber++,
+      team1: { squadIndex: 1, name: squads[1].name },
+      team2: { squadIndex: 4, name: squads[4].name },
+      played: false,
+    });
+
+    matches.push({
+      round: "quartas",
+      matchNumber: matchNumber++,
+      team1: { squadIndex: 2, name: squads[2].name },
+      team2: { squadIndex: 3, name: squads[3].name },
+      played: false,
+    });
   }
 
   return {
@@ -69,7 +91,6 @@ function initializeTournament(squads) {
   };
 }
 
-// ✅ VALIDAÇÃO E CONVERSÃO ROBUSTA DE DATA
 function validateAndConvertDate(dateValue) {
   if (!dateValue) {
     throw new Error("scheduled_date é obrigatório");
@@ -77,24 +98,18 @@ function validateAndConvertDate(dateValue) {
 
   let date;
   
-  // Se já é Date válido
   if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
     date = dateValue;
   }
-  // Se é string ISO válida
   else if (typeof dateValue === 'string') {
     date = new Date(dateValue);
   }
-  // Se é objeto com toISOString (frontend Date serializado)
   else if (dateValue.toISOString && typeof dateValue.toISOString === 'function') {
     date = new Date(dateValue.toISOString());
   }
-  // Outros casos
   else {
     date = new Date(dateValue);
   }
-
-  // Validação final
   if (!(date instanceof Date) || isNaN(date.getTime())) {
     throw new Error("scheduled_date inválido. Use formato ISO ou Date válido.");
   }
@@ -102,7 +117,6 @@ function validateAndConvertDate(dateValue) {
   return date;
 }
 
-// ✅ CRIAR PANELÃO COM VALIDAÇÃO DE DATA
 async function criarPanelao(teamId, {
   nTimes = 2,
   is_tournament = false,
@@ -112,14 +126,12 @@ async function criarPanelao(teamId, {
   place,
   note,
 } = {}) {
-  // Validações básicas
   if (!teamId) throw new Error("teamId é obrigatório");
   if (!scheduled_date || !duration || !invited_by) {
     throw new Error("scheduled_date, duration e invited_by são obrigatórios.");
   }
   if (nTimes < 2) throw new Error("Número de times deve ser >= 2");
 
-  // ✅ CONVERSÃO E VALIDAÇÃO DE DATA
   const validatedDate = validateAndConvertDate(scheduled_date);
   console.log('[SERVICE] Data validada:', validatedDate.toISOString());
 
@@ -129,7 +141,7 @@ async function criarPanelao(teamId, {
   const novoPanelao = await Panelao.create({
     team_id: team._id,
     status: 'sorteio_pendente',
-    scheduled_date: validatedDate,  // ✅ Data validada
+    scheduled_date: validatedDate, 
     duration,
     n_times: Number(nTimes),
     is_tournament: Boolean(is_tournament),
@@ -139,7 +151,7 @@ async function criarPanelao(teamId, {
     tournament: null
   });
 
-  console.log('[SERVICE] ✅ Panelão criado:', novoPanelao._id, {
+  console.log('[SERVICE] Panelão criado:', novoPanelao._id, {
     n_times: novoPanelao.n_times,
     is_tournament: novoPanelao.is_tournament
   });
@@ -173,7 +185,7 @@ async function salvarSorteio(panelaoId, squads, uid) {
   
   if (nTimes > 2) {
     panelao.tournament = initializeTournament(squads);
-    console.log('[SERVICE] ✅ Torneio inicializado:', nTimes, 'times');
+    console.log('[SERVICE] Torneio inicializado:', nTimes, 'times');
   } else {
     panelao.tournament = null;
   }
@@ -233,7 +245,6 @@ async function atualizarPartidaTorneio(panelaoId, { matchIndex, goals_team1, goa
   match.winner_squadIndex = winner_squadIndex != null ? Number(winner_squadIndex) : null;
   match.played = true;
 
-  // Lógica para criar próximas fases (4 times e 3 times)
   const squads = panelao.squads || [];
 
   if (squads.length === 4 && tournament.format === "single_elimination") {
@@ -289,6 +300,146 @@ async function atualizarPartidaTorneio(panelaoId, { matchIndex, goals_team1, goa
         team2: { squadIndex: winner, name: squads[winner]?.name || "Time 2" },
         played: false,
       });
+    }
+  } 
+  
+  if (squads.length === 5 && tournament.format === "single_elimination") {
+    const preMatch = matches.find((m) => m.round === "pre");
+    const semis = matches.filter((m) => m.round === "semis");
+    const hasFinal = matches.some((m) => m.round === "final");
+    const hasThird = matches.some((m) => m.round === "terceiro_lugar");
+
+    let nextMatchNumber =
+      matches.reduce((max, m) => Math.max(max, m.matchNumber || 0), 0) + 1;
+
+    if (
+      preMatch &&
+      preMatch.played &&
+      preMatch.winner_squadIndex != null &&
+      semis.length === 0
+    ) {
+      const winnerPre = preMatch.winner_squadIndex;
+
+      matches.push({
+        round: "semis",
+        matchNumber: nextMatchNumber++,
+        team1: {
+          squadIndex: winnerPre,
+          name: squads[winnerPre]?.name || "Time pré",
+        },
+        team2: { squadIndex: 2, name: squads[2]?.name || "Time 2" },
+        played: false,
+      });
+
+      matches.push({
+        round: "semis",
+        matchNumber: nextMatchNumber++,
+        team1: { squadIndex: 3, name: squads[3]?.name || "Time 3" },
+        team2: { squadIndex: 4, name: squads[4]?.name || "Time 4" },
+        played: false,
+      });
+    }
+
+    const updatedSemis = matches.filter((m) => m.round === "semis");
+    const allSemisPlayed =
+      updatedSemis.length === 2 &&
+      updatedSemis.every((m) => m.played && m.winner_squadIndex != null);
+
+    if (allSemisPlayed && !hasFinal) {
+      const [semi1, semi2] = updatedSemis;
+      const winner1 = semi1.winner_squadIndex;
+      const winner2 = semi2.winner_squadIndex;
+      const loser1 =
+        semi1.team1.squadIndex === winner1 ? semi1.team2.squadIndex : semi1.team1.squadIndex;
+      const loser2 =
+        semi2.team1.squadIndex === winner2 ? semi2.team2.squadIndex : semi2.team1.squadIndex;
+
+      matches.push({
+        round: "final",
+        matchNumber: nextMatchNumber++,
+        team1: { squadIndex: winner1, name: squads[winner1]?.name || "Time A" },
+        team2: { squadIndex: winner2, name: squads[winner2]?.name || "Time B" },
+        played: false,
+      });
+
+      if (!hasThird) {
+        matches.push({
+          round: "terceiro_lugar",
+          matchNumber: nextMatchNumber++,
+          team1: { squadIndex: loser1, name: squads[loser1]?.name || "Time C" },
+          team2: { squadIndex: loser2, name: squads[loser2]?.name || "Time D" },
+          played: false,
+        });
+      }
+    }
+  }
+ if (squads.length === 6 && tournament.format === "single_elimination") {
+    const quartas = matches.filter((m) => m.round === "quartas");
+    const semis = matches.filter((m) => m.round === "semis");
+    const hasFinal = matches.some((m) => m.round === "final");
+    const hasThird = matches.some((m) => m.round === "terceiro_lugar");
+
+    let nextMatchNumber =
+      matches.reduce((max, m) => Math.max(max, m.matchNumber || 0), 0) + 1;
+
+    const allQuartasPlayed =
+      quartas.length === 3 &&
+      quartas.every((m) => m.played && m.winner_squadIndex != null);
+
+    if (allQuartasPlayed && semis.length === 0) {
+      const winnerQ1 = quartas[0].winner_squadIndex;
+      const winnerQ2 = quartas[1].winner_squadIndex;
+      const winnerQ3 = quartas[2].winner_squadIndex;
+
+      matches.push({
+        round: "semis",
+        matchNumber: nextMatchNumber++,
+        team1: { squadIndex: winnerQ1, name: squads[winnerQ1]?.name || "Time Q1" },
+        team2: { squadIndex: winnerQ2, name: squads[winnerQ2]?.name || "Time Q2" },
+        played: false,
+      });
+
+      const byeIndex = 0;
+      matches.push({
+        round: "semis",
+        matchNumber: nextMatchNumber++,
+        team1: { squadIndex: byeIndex, name: squads[byeIndex]?.name || "Time Seed" },
+        team2: { squadIndex: winnerQ3, name: squads[winnerQ3]?.name || "Time Q3" },
+        played: false,
+      });
+    }
+
+    const updatedSemis = matches.filter((m) => m.round === "semis");
+    const allSemisPlayed =
+      updatedSemis.length === 2 &&
+      updatedSemis.every((m) => m.played && m.winner_squadIndex != null);
+
+    if (allSemisPlayed && !hasFinal) {
+      const [semi1, semi2] = updatedSemis;
+      const winner1 = semi1.winner_squadIndex;
+      const winner2 = semi2.winner_squadIndex;
+      const loser1 =
+        semi1.team1.squadIndex === winner1 ? semi1.team2.squadIndex : semi1.team1.squadIndex;
+      const loser2 =
+        semi2.team1.squadIndex === winner2 ? semi2.team2.squadIndex : semi2.team1.squadIndex;
+
+      matches.push({
+        round: "final",
+        matchNumber: nextMatchNumber++,
+        team1: { squadIndex: winner1, name: squads[winner1]?.name || "Time A" },
+        team2: { squadIndex: winner2, name: squads[winner2]?.name || "Time B" },
+        played: false,
+      });
+
+      if (!hasThird) {
+        matches.push({
+          round: "terceiro_lugar",
+          matchNumber: nextMatchNumber++,
+          team1: { squadIndex: loser1, name: squads[loser1]?.name || "Time C" },
+          team2: { squadIndex: loser2, name: squads[loser2]?.name || "Time D" },
+          played: false,
+        });
+      }
     }
   }
 

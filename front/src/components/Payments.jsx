@@ -14,7 +14,7 @@ const formatDatePTBR = (dateString) => {
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     }).format(new Date(dateString))
   } catch {
     return '--'
@@ -105,11 +105,9 @@ export default function Financeiro() {
   const [preview, setPreview] = useState({ open: false, src: '', title: '' })
   const [searchMember, setSearchMember] = useState('')
 
-  // avisos do admin para o representante
   const [warnings, setWarnings] = useState([])
   const [warningsLoading, setWarningsLoading] = useState(false)
 
-  // limpar estado quando trocar de time
   useEffect(() => {
     if (!teamId) return
     setOpenMonth('')
@@ -237,7 +235,6 @@ export default function Financeiro() {
         return
       }
     } catch {
-      // fallback
     }
     const t = (teams || []).find((tt) => String(tt.id || tt._id) === String(id))
     const first = t?.created_at ? toYearMonth(t.created_at) : getCurrentMonth()
@@ -260,7 +257,6 @@ export default function Financeiro() {
     fetchMonthRange(teamId)
   }, [teamId, isRep, isJog])
 
-  // carregar avisos quando o representante troca de time
   useEffect(() => {
     if (!isRep) return
     if (!teamId) {
@@ -447,11 +443,11 @@ export default function Financeiro() {
     }
   }
 
-    const cards = useMemo(() => {
+  const cards = useMemo(() => {
     return payments.map((payment) => {
       const label = toLabel(payment.status, payment.due)
-      const dueBR = formatDatePTBR(payment.due)           
-      const paidOnBR = formatDatePTBR(payment.paid_at)     
+      const dueBR = formatDatePTBR(payment.due)
+      const paidOnBR = formatDatePTBR(payment.paid_at)
       const monthLabel = payment.month ? ymToLabel(payment.month) : ''
       return { ...payment, label, dueBR, paidOnBR, monthLabel }
     })
@@ -525,22 +521,26 @@ export default function Financeiro() {
               <div className="mb-3 text-lg font-bold">{selectedAdminTeam.nome}</div>
             )}
             <div className="space-y-2 mt-2">
-              {adminMembers.map((m) => (
-                <div
-                  key={m.user_id}
-                  className="flex justify-between items-center border-b py-2"
-                >
-                  <span>{m.nome}</span>
-                  <span className={m.status === 'paid' ? 'text-green-700' : 'text-red-700'}>
-                    {m.status === 'paid' ? 'Pago' : 'Não pago'}
-                    {m.paid_at && (
-                      <span className="ml-2 text-xs text-gray-500">
-                        ({formatDatePTBR(m.paid_at)})
-                      </span>
-                    )}
-                  </span>
-                </div>
-              ))}
+              {adminMembers.map((m) => {
+                const isPaid = m.status === 'paid'
+                const statusText = isPaid ? 'Pago' : 'Não pago'
+                return (
+                  <div
+                    key={m.user_id}
+                    className="flex justify-between items-center border-b py-2"
+                  >
+                    <span>{m.nome}</span>
+                    <span className={isPaid ? 'text-green-700' : 'text-red-700'}>
+                      {statusText}
+                      {m.paid_at && (
+                        <span className="ml-2 text-xs text-gray-500">
+                          ({formatDatePTBR(m.paid_at)})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )
+              })}
               {adminMembers.length === 0 && (
                 <div className="text-gray-500">Nenhum membro encontrado.</div>
               )}
@@ -561,7 +561,6 @@ export default function Financeiro() {
           : 'Selecione um time, escolha o mês e envie o comprovante.'}
       </p>
 
-      {/* Avisos para representante */}
       {isRep && (
         <div className="mt-3">
           {warningsLoading ? (
@@ -591,7 +590,6 @@ export default function Financeiro() {
         </div>
       )}
 
-      {/* Times */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
         {teams.map((t) => {
           const id = String(t.id || t._id)
@@ -624,7 +622,6 @@ export default function Financeiro() {
         )}
       </div>
 
-      {/* Seletor de mês */}
       <div className="mt-2 flex items-center gap-3">
         <div className="w-52">
           <label className="text-sm text-gray-600">Mês (YYYY-MM)</label>
@@ -682,7 +679,7 @@ export default function Financeiro() {
                   </span>
                 </div>
                 <div className="text-gray-500 text-sm">
-                  Vencimento:{payment.dueBR}                 
+                  Vencimento:{payment.dueBR}
                 </div>
                 <div className="text-gray-700 text-sm">
                   Valor: <span className="font-medium">{fmtBRL(payment.amount)}</span>
@@ -790,7 +787,7 @@ export default function Financeiro() {
                 </span>
               </div>
               <div className="text-gray-500 text-sm">
-                Vencimento:{' '}
+                Vencimento{' '}
                 {payment.due
                   ? new Date(payment.due).toLocaleDateString('pt-BR')
                   : '--'}
@@ -842,7 +839,7 @@ export default function Financeiro() {
                 const nome = row.user_id?.nome || 'Jogador'
                 const color = badgeColors[label] || 'bg-gray-100 text-gray-700'
                 const dueBR = formatDatePTBR(row.due_date)
-                const paidAt = row.paid_at ? formatDatePTBR(row.paid_at) : null 
+                const paidAt = row.paid_at ? formatDatePTBR(row.paid_at) : null
                 const uid = row.user_id?._id || row.user_id
 
                 return (

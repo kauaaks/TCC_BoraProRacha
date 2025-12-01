@@ -24,7 +24,9 @@ const teamColors = [
   { name: "Amarelo", class: "bg-yellow-500", badge: "bg-yellow-100 text-yellow-800" },
   { name: "Vermelho", class: "bg-red-600", badge: "bg-red-100 text-red-800" },
   { name: "Roxo", class: "bg-purple-600", badge: "bg-purple-100 text-purple-800" },
+  { name: "Laranja", class: "bg-orange-500", badge: "bg-orange-100 text-orange-800" },
 ];
+
 
 function shuffleArray(arr) {
   const a = [...arr];
@@ -41,12 +43,14 @@ function TournamentBracketAdmin({ tournament, squads, onEditMatch, isFinalized }
   }
 
   const rounds = {
+    pre: tournament.matches.filter((m) => m.round === "pre"),
     quartas: tournament.matches.filter((m) => m.round === "quartas"),
     semis: tournament.matches.filter((m) => m.round === "semis"),
     final: tournament.matches.filter((m) => m.round === "final"),
     terceiro_lugar: tournament.matches.filter((m) => m.round === "terceiro_lugar"),
   };
 
+  const hasPre = rounds.pre.length > 0;
   const hasQuartas = rounds.quartas.length > 0;
 
   const MatchCard = ({ match, matchIndex }) => {
@@ -57,8 +61,9 @@ function TournamentBracketAdmin({ tournament, squads, onEditMatch, isFinalized }
       <div className="border rounded-lg p-3 bg-white shadow-sm min-w-[220px]">
         <div className="text-xs text-gray-500 text-center mb-2 font-semibold flex items-center justify-between">
           <span>
-            {match.round === "semis" && "Semifinal"}
+            {match.round === "pre" && "Pré-jogo"}
             {match.round === "quartas" && "Quartas"}
+            {match.round === "semis" && "Semifinal"}
             {match.round === "final" && "Final"}
             {match.round === "terceiro_lugar" && "3º Lugar"}
           </span>
@@ -125,16 +130,29 @@ function TournamentBracketAdmin({ tournament, squads, onEditMatch, isFinalized }
 
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-8 items-start min-w-max">
+          {hasPre && (
+            <div className="space-y-4">
+              <div className="text-sm font-semibold text-gray-700 text-center">
+                Pré-jogo
+              </div>
+              {renderColumn(rounds.pre)}
+            </div>
+          )}
+
           {hasQuartas && (
             <div className="space-y-4">
-              <div className="text-sm font-semibold text-gray-700 text-center">Quartas</div>
+              <div className="text-sm font-semibold text-gray-700 text-center">
+                Quartas
+              </div>
               {renderColumn(rounds.quartas)}
             </div>
           )}
 
           {rounds.semis.length > 0 && (
             <div className="space-y-4">
-              <div className="text-sm font-semibold text-gray-700 text-center">Semifinais</div>
+              <div className="text-sm font-semibold text-gray-700 text-center">
+                Semifinais
+              </div>
               {renderColumn(rounds.semis)}
             </div>
           )}
@@ -176,6 +194,8 @@ function TournamentBracketAdmin({ tournament, squads, onEditMatch, isFinalized }
     </div>
   );
 }
+
+
 
 export default function GamesRepresentante() {
   const { user, apiCall } = useAuth();
@@ -349,7 +369,7 @@ export default function GamesRepresentante() {
       scheduled_date,  
       duration: 90,
       nTimes: Number(newGame.teamsCount),    
-      is_tournament: Number(newGame.teamsCount) === 4,
+      is_tournament: ["3", "4", "5", "6"].includes(newGame.teamsCount),
       place: newGame.place,
       note: newGame.note
     };
@@ -865,11 +885,11 @@ export default function GamesRepresentante() {
                         <Shuffle className="w-3 h-3" />
                         {game.teamsCount || 2} times
                       </span>
-                      {game.tournament && game.teamsCount === 4 && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <Trophy className="w-3 h-3" />
-                        Mini‑torneio (4 times)
-                      </span>
+                      {game.tournament && game.teamsCount >= 3 && game.teamsCount <= 6 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <Trophy className="w-3 h-3" />
+                           Mini‑torneio ({game.teamsCount} {game.teamsCount === 1 ? "time" : "times"})
+                        </span>
                       )}
                       {!game.tournament && game.teamsCount > 2 && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -1048,7 +1068,7 @@ export default function GamesRepresentante() {
                 {sortModalGame.tournament && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <Trophy className="w-3 h-3" />
-                    Mini-Torneio
+                    Mini‑torneio ({sortModalGame.teamsCount} {sortModalGame.teamsCount === 1 ? "time" : "times"})
                   </span>
                 )}
               </p>
@@ -1185,52 +1205,64 @@ export default function GamesRepresentante() {
               </div>
             )}
 
-            {sortModalGame.tournament && sortModalGame.teamsCount === 4 ? (
-              <TournamentBracketAdmin
-                tournament={sortModalGame.tournament}
-                squads={sortModalGame.squads}
-                onEditMatch={handleEditTournamentMatch}
-                isFinalized={sortModalGame.status === "terminado"}
-              />
-            ) : sortModalGame.squads ? (
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-3">
-                  Panelas ({sortModalGame.squads.length} times)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {sortModalGame.squads.map((team, idx) => (
+                          {/* Panelas */}
+          {sortModalGame.squads && sortModalGame.squads.length > 0 ? (
+            <div className="mt-6">
+              <h3 className="font-semibold text-gray-800 mb-3">
+                Panelas ({sortModalGame.squads.length} times)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sortModalGame.squads.map((team, idx) => (
+                  <div
+                    key={idx}
+                    className="border rounded-xl overflow-hidden bg-white shadow-sm"
+                  >
                     <div
-                      key={idx}
-                      className="border rounded-xl overflow-hidden bg-white shadow-sm"
+                      className={`${team.color.class} text-white px-3 py-2 flex items-center justify-between`}
                     >
-                      <div
-                        className={`${team.color.class} text-white px-3 py-2 flex items-center justify-between`}
-                      >
-                        <span className="font-semibold">{team.name}</span>
-                        <span className="text-xs flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          {team.players.length}
-                        </span>
-                      </div>
-                      <div className="p-3 space-y-1 text-sm">
-                        {team.players.map((p) => (
-                          <div key={p.id} className="flex items-center justify-between">
-                            <span>{p.name}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <span className="font-semibold">{team.name}</span>
+                      <span className="text-xs flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {team.players.length}
+                      </span>
                     </div>
-                  ))}
-                </div>
+                    <div className="p-3 space-y-1 text-sm">
+                      {team.players.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center justify-between"
+                        >
+                          <span>{p.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="border border-dashed rounded-xl p-6 text-center text-gray-500 text-sm">
-                Nenhum sorteio realizado ainda.
+            </div>
+          ) : (
+            <div className="border border-dashed rounded-xl p-6 text-center text-gray-500 text-sm mt-6">
+              Nenhum sorteio realizado ainda.
+            </div>
+          )}
+
+          {/* Mini‑torneio */}
+          {sortModalGame.tournament &&
+            Array.isArray(sortModalGame.tournament.matches) &&
+            sortModalGame.tournament.matches.length > 0 && (
+              <div className="mt-8">
+                <TournamentBracketAdmin
+                  tournament={sortModalGame.tournament}
+                  squads={sortModalGame.squads}
+                  onEditMatch={handleEditTournamentMatch}
+                  isFinalized={sortModalGame.status === "terminado"}
+                />
               </div>
             )}
-          </Card>
-        </div>
-      )}
+        </Card>
+      </div>
+    )}
+
 
       {scoreModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
