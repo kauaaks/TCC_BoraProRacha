@@ -2,6 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Pencil, Image as ImageIcon } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  getAuth,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  verifyBeforeUpdateEmail,
+} from "firebase/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -108,35 +114,84 @@ export default function Profile() {
   };
 
   const saveEmail = async () => {
-  try {
-    setEmailLoading(true);
+    try {
+      setEmailLoading(true);
 
-    const res = await apiCall("/users/me/email", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ newEmail }),
-    });
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
 
-    if (res?.error) {
-      alert(res.error || "Não foi possível atualizar o e-mail");
-      return;
-    }
+      if (!currentUser || !user?.email) {
+        alert("Usuário não autenticado. Faça login novamente.");
+        return;
+      }
 
-    if (res?.user?.email) {
+      const trimmedEmail = newEmail.trim();
+
+      if (!trimmedEmail) {
+        alert("Informe um e-mail válido.");
+        return;
+      }
+
+      if (trimmedEmail.toLowerCase() === user.email.toLowerCase()) {
+        alert("O novo e-mail é igual ao atual.");
+        return;
+      }
+
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        emailPassword
+      );
+      await reauthenticateWithCredential(currentUser, credential);
+
+      await verifyBeforeUpdateEmail(currentUser, trimmedEmail, {
+        url: window.location.origin + "/profile",
+        handleCodeInApp: false,
+      }); 
+
+      const res = await apiCall("/users/me/email", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newEmail: trimmedEmail }),
+      });
+
+      if (res?.error) {
+        alert(res.error || "Não foi possível atualizar o e-mail no servidor");
+        return;
+      }
+
       setUser((prev) => ({
         ...prev,
-        email: res.user.email,
+        email: trimmedEmail,
       }));
-    }
 
-    setShowEmailModal(false);
-  } catch (err) {
-    console.error("Erro ao atualizar e-mail:", err);
-    alert("Erro ao atualizar e-mail");
-  } finally {
-    setEmailLoading(false);
-  }
-};
+      setShowEmailModal(false);
+      alert(
+        "Enviamos um link de confirmação para o novo e-mail. Só depois de clicar nele o login será atualizado."
+      );
+    } catch (err) {
+      console.error("Erro ao atualizar e-mail:", err);
+
+      if (err?.code === "auth/wrong-password") {
+        alert("Senha incorreta. Tente novamente.");
+      } else if (err?.code === "auth/invalid-email") {
+        alert("E-mail inválido.");
+      } else if (err?.code === "auth/email-already-in-use") {
+        alert("Este e-mail já está em uso em outra conta.");
+      } else if (err?.code === "auth/requires-recent-login") {
+        alert(
+          "Por segurança, faça login novamente e tente mudar o e-mail de novo."
+        );
+      } else if (err?.code === "auth/operation-not-allowed") {
+        alert(
+          "O Firebase exige verificação do novo e-mail. Verifique se recebeu o link de confirmação."
+        );
+      } else {
+        alert("Erro ao atualizar e-mail. Tente novamente.");
+      }
+    } finally {
+      setEmailLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center py-14 px-4">
