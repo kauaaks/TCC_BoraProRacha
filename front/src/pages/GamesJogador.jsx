@@ -5,6 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users, Shirt, Loader2, ArrowLeft, X, Trophy } from "lucide-react";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:5000";
+
+const toAbsolute = (u) =>
+  u?.startsWith?.("http") ? u : `${API_BASE_URL}${u || ""}`;
+
 function formatDateLabel(date, time) {
   try {
     const d = new Date(`${date}T${time || "00:00"}`);
@@ -329,48 +337,56 @@ export default function GamesJogador() {
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {myTeams.map((team) => {
-            const id = String(team._id || team.id);
-            const playersCount = team.playersCount || team.players?.length || 0;
+            {myTeams.map((team) => {
+              const id = String(team._id || team.id);
+              const playersCount = team.playersCount || team.players?.length || 0;
+              const shieldSrc = team.logo_url ? toAbsolute(team.logo_url) : null;
 
-            return (
-              <div
-                key={id}
-                className="p-4 rounded-lg border bg-white flex items-center justify-between cursor-pointer hover:shadow-lg hover:border-appsociety-green transition"
-                onClick={() => setSelectedTeam(id)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg bg-appsociety-green flex items-center justify-center">
-                    <Users className="w-6 h-6 text-white" />
+              return (
+                <div
+                  key={id}
+                  className="p-4 rounded-lg border bg-white flex items-center justify-between cursor-pointer hover:shadow-lg hover:border-appsociety-green transition"
+                  onClick={() => setSelectedTeam(id)}
+                >
+                  <div className="flex items-center gap-3">
+                    {shieldSrc ? (
+                      <img
+                        src={shieldSrc}
+                        alt={`Escudo de ${team.nome || team.name}`}
+                        className="w-12 h-12 rounded-lg object-cover border"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-appsociety-green flex items-center justify-center">
+                        <Users className="w-6 h-6 text-white" />
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-semibold text-gray-900">
+                        {team.nome || team.name}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {playersCount} {playersCount === 1 ? "jogador" : "jogadores"}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">
-                      {team.nome || team.name}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {playersCount}{" "}
-                      {playersCount === 1 ? "jogador" : "jogadores"}
-                    </div>
+                  <div className="text-appsociety-green">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
                   </div>
                 </div>
-                <div className="text-appsociety-green">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
     );

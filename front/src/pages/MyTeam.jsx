@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import GameStatsForm from '../components/forms/GameStatsForm'
 import QRCode from 'qrcode' // gerar QR local
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const POSITION_OPTIONS = [
   { value: 'goleiro', label: 'Goleiro' },
@@ -37,8 +38,8 @@ export default function MyTeam() {
   const isRep = role === 'representante_time'
   const isJog = role === 'jogador'
 
-  const [teams, setTeams] = useState([])        // lista de times do usuário
-  const [activeTeam, setActiveTeam] = useState(null) // time selecionado para ver detalhes/membros
+  const [teams, setTeams] = useState([])              // lista de times do usuário
+  const [activeTeam, setActiveTeam] = useState(null)  // time selecionado para ver detalhes/membros
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -51,6 +52,9 @@ export default function MyTeam() {
 
   // loading por membro na troca de posição
   const [positionSaving, setPositionSaving] = useState({}) // { uid: true | false }
+
+  // upload escudo
+  const [shieldUploading, setShieldUploading] = useState(false)
 
   useEffect(() => {
     loadTeamsAndMaybeFirst()
@@ -70,7 +74,7 @@ export default function MyTeam() {
         if (isRep) {
           await Promise.all([
             loadMembers(id),
-            gerarConvite(id)
+            gerarConvite(id),
           ])
         } else {
           await loadMembers(id)
@@ -111,7 +115,7 @@ export default function MyTeam() {
       const res = await apiCall('/invite/gerar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timeId: teamId })
+        body: JSON.stringify({ timeId: teamId }),
       })
       if (res?.invite) {
         setInvite(res.invite)
@@ -154,7 +158,7 @@ export default function MyTeam() {
       await apiCall(`/teams/${teamId}/members/${memberUid}/position`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ position: newPosition })
+        body: JSON.stringify({ position: newPosition }),
       })
       // atualiza localmente o array de members
       setMembers(prev =>
@@ -167,6 +171,42 @@ export default function MyTeam() {
       alert('Não foi possível atualizar a posição. Tente novamente.')
     } finally {
       setPositionSaving(prev => ({ ...prev, [memberUid]: false }))
+    }
+  }
+
+  // upload de escudo (foto) do time - usa PUT /teams/:id/escudo com FormData[memory:87]
+  const handleShieldUpload = async (teamId, file) => {
+    if (!teamId || !file) return
+    try {
+      setShieldUploading(true)
+      const formData = new FormData()
+      formData.append('escudo', file) // mesmo nome usado no multer single("escudo")
+
+      const res = await apiCall(`/teams/${teamId}/escudo`, {
+        method: 'PUT',
+        body: formData, // não setar Content-Type manualmente aqui
+      })
+
+      if (res?.team) {
+        const updated = res.team
+
+        // atualiza time ativo
+        setActiveTeam(prev =>
+          prev && (prev._id === updated._id || prev.id === updated._id) ? updated : prev
+        )
+
+        // atualiza lista de times
+        setTeams(prev =>
+          (prev || []).map(t =>
+            (t._id === updated._id || t.id === updated._id) ? updated : t
+          )
+        )
+      }
+    } catch (e) {
+      console.error('Erro ao enviar escudo:', e)
+      alert('Não foi possível enviar o escudo. Tente novamente.')
+    } finally {
+      setShieldUploading(false)
     }
   }
 
@@ -201,6 +241,15 @@ export default function MyTeam() {
                 >
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
+                      {t.logo_url && (
+                        <img
+                          src={t.logo_url.startsWith('http')
+                            ? t.logo_url
+                            : `${API_BASE_URL}${t.logo_url}`}
+                          alt={`Escudo de ${t.nome || t.name}`}
+                          className="w-8 h-8 rounded-full border object-cover"
+                        />
+                      )}
                       <Users className="w-5 h-5" />
                       <span>{t.nome || t.name}</span>
                     </CardTitle>
@@ -224,16 +273,55 @@ export default function MyTeam() {
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Users className="w-5 h-5" />
+                  <CardTitle className="flex items-center space-x-3">
+                    {activeTeam.logo_url ? (
+                      <img
+                        src={activeTeam.logo_url.startsWith('http')
+                          ? activeTeam.logo_url
+                          : `${API_BASE_URL}${activeTeam.logo_url}`}
+                        alt={`Escudo de ${activeTeam.nome || activeTeam.name}`}
+                        className="w-12 h-12 rounded-full border object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full border flex items-center justify-center text-xs text-gray-500">
+                        Sem escudo
+                      </div>
+                    )}
+
                     <span>{activeTeam.nome || activeTeam.name}</span>
                   </CardTitle>
                   <CardDescription>{activeTeam.description || 'Sem descrição cadastrada'}</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <p className="text-sm text-gray-600">
-                    Criado em: {new Date(activeTeam.created_at || activeTeam.createdAt || Date.now()).toLocaleDateString('pt-BR')}
+                    Criado em:{' '}
+                    {new Date(activeTeam.created_at || activeTeam.createdAt || Date.now())
+                      .toLocaleDateString('pt-BR')}
                   </p>
+
+                  {/* Upload de escudo: apenas representante */}
+                  {isRep && (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-medium text-gray-700">Alterar escudo</span>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={shieldUploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            const id = activeTeam.id || activeTeam._id
+                            if (file && id) {
+                              handleShieldUpload(id, file)
+                            }
+                          }}
+                        />
+                        {shieldUploading && (
+                          <span className="text-xs text-gray-500">Enviando...</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -269,7 +357,9 @@ export default function MyTeam() {
                         <div className="text-xs text-gray-500 break-all text-center">{inviteUrl}</div>
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-600">{inviteLoading ? 'Gerando convite...' : 'Sem convite ativo'}</div>
+                      <div className="text-sm text-gray-600">
+                        {inviteLoading ? 'Gerando convite...' : 'Sem convite ativo'}
+                      </div>
                     )}
 
                     <div className="flex gap-2">
@@ -281,8 +371,18 @@ export default function MyTeam() {
                     </div>
 
                     <div className="flex gap-2 items-center">
-                      <Input readOnly value={inviteToken} placeholder="Código de convite" className="uppercase tracking-widest" />
-                      <Button type="button" variant="outline" onClick={() => copy(inviteToken)} disabled={!inviteToken}>
+                      <Input
+                        readOnly
+                        value={inviteToken}
+                        placeholder="Código de convite"
+                        className="uppercase tracking-widest"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => copy(inviteToken)}
+                        disabled={!inviteToken}
+                      >
                         Copiar código
                       </Button>
                     </div>
@@ -354,7 +454,7 @@ export default function MyTeam() {
                             {/* Jogador comum só enxerga a posição, não edita */}
                             {!canEditPosition && member.position && (
                               <span className="mt-1 text-xs text-gray-600">
-                                Posição:{' '}
+                                Posição{' '}
                                 {POSITION_OPTIONS.find(p => p.value === member.position)?.label ||
                                   member.position}
                               </span>

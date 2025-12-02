@@ -1,3 +1,4 @@
+// src/services/teamService.js
 const teams = require('../models/teams');
 const user = require('../models/user');
 
@@ -14,7 +15,7 @@ function toUidArray(arr) {
 
 function normalizeTeam(doc) {
   if (!doc) return null;
-  
+
   const created_by_uid =
     doc.created_by_firebaseUid
       ? String(doc.created_by_firebaseUid)
@@ -29,12 +30,19 @@ function normalizeTeam(doc) {
     nome: doc.nome || doc.name || "",
     description: doc.description || "",
     monthly_fee: Number(doc.monthly_fee ?? doc.monthlyFee ?? 0),
-    member_count: doc.member_count ?? doc.membersCount ?? (Array.isArray(doc.members) ? doc.members.length : 0),
-    is_active: typeof doc.is_active === "boolean" ? doc.is_active : doc.isActive ?? true,
+    member_count:
+      doc.member_count ??
+      doc.membersCount ??
+      (Array.isArray(doc.members) ? doc.members.length : 0),
+    is_active:
+      typeof doc.is_active === "boolean" ? doc.is_active : doc.isActive ?? true,
     created_at: doc.created_at || doc.createdAt || new Date(),
     created_by_firebaseUid: created_by_uid,
     representatives: toUidArray(doc.representatives),
-    members: toUidArray(doc.members)
+    members: toUidArray(doc.members),
+
+    // 👇 novo campo para o escudo/foto
+    logo_url: doc.logo_url || "",
   };
 }
 
@@ -46,7 +54,11 @@ function toYearMonth(d) {
   return `${y}-${m}`;
 }
 function firstMonthForTeam(teamDoc) {
-  const base = teamDoc?.next_payment_date || teamDoc?.created_at || teamDoc?.createdAt || Date.now();
+  const base =
+    teamDoc?.next_payment_date ||
+    teamDoc?.created_at ||
+    teamDoc?.createdAt ||
+    Date.now();
   return toYearMonth(base);
 }
 function lastMonthForTeam() {
@@ -67,8 +79,8 @@ async function meuTime(uid) {
       { representatives: { $elemMatch: { uid } } },
       { representatives: { $elemMatch: { firebaseUid: uid } } },
       { members: { $elemMatch: { uid } } },
-      { members: { $elemMatch: { firebaseUid: uid } } }
-    ]
+      { members: { $elemMatch: { firebaseUid: uid } } },
+    ],
   };
 
   const doc = await teams.findOne(filter).lean();
@@ -77,7 +89,9 @@ async function meuTime(uid) {
     id: String(doc._id),
     name: doc.nome,
     description: doc.description || "",
-    created_at: doc.created_at || doc.createdAt || new Date()
+    created_at: doc.created_at || doc.createdAt || new Date(),
+    // 👇 também devolve escudo aqui
+    logo_url: doc.logo_url || "",
   };
 }
 
@@ -92,8 +106,8 @@ async function timeUid(uid) {
         { representatives: { $elemMatch: { uid } } },
         { representatives: { $elemMatch: { firebaseUid: uid } } },
         { members: { $elemMatch: { uid } } },
-        { members: { $elemMatch: { firebaseUid: uid } } }
-      ]
+        { members: { $elemMatch: { firebaseUid: uid } } },
+      ],
     };
     const docs = await teams.find(filter).lean();
     return (docs || []).map(normalizeTeam).filter(Boolean);
@@ -110,10 +124,20 @@ async function buscarTime(id) {
 }
 
 async function criarTime(dados) {
-  const { nome, description, logo_url, created_by, monthly_fee, members, next_payment_date } = dados;
+  const {
+    nome,
+    description,
+    logo_url,
+    created_by,
+    monthly_fee,
+    members,
+    next_payment_date,
+  } = dados;
 
   if (!nome || !description || !created_by || !monthly_fee || !next_payment_date) {
-    throw new Error("Preencha todos os campos obrigatórios (inclua next_payment_date).");
+    throw new Error(
+      "Preencha todos os campos obrigatórios (inclua next_payment_date)."
+    );
   }
 
   const jaExiste = await teams.findOne({ nome });
@@ -126,7 +150,7 @@ async function criarTime(dados) {
     created_by,
     monthly_fee,
     members: Array.isArray(members) && members.length ? members : [created_by],
-    next_payment_date: new Date(next_payment_date)
+    next_payment_date: new Date(next_payment_date),
   });
 
   return novoTime;
@@ -142,12 +166,13 @@ async function listarMembrosTime(teamId) {
     "nome firebaseUid"
   );
 
-  const members = memberUids.map(uid => {
-    const userData = users.find(u => u.firebaseUid === uid);
+  const members = memberUids.map((uid) => {
+    const userData = users.find((u) => u.firebaseUid === uid);
     let originalUserType = null;
     let position = undefined;
     for (const m of team.members) {
-      const val = typeof m === "object" ? (m.uid || m.firebaseUid || m._id || m.id) : m;
+      const val =
+        typeof m === "object" ? m.uid || m.firebaseUid || m._id || m.id : m;
       if (String(val) === uid) {
         originalUserType = typeof m === "object" ? m.user_type : null;
         position = typeof m === "object" ? m.position : undefined;
@@ -158,7 +183,7 @@ async function listarMembrosTime(teamId) {
       uid,
       user_type: originalUserType,
       position,
-      nome: userData?.nome || "Desconhecido"
+      nome: userData?.nome || "Desconhecido",
     };
   });
 
@@ -168,7 +193,7 @@ async function listarMembrosTime(teamId) {
 async function atualizarTime(id, NovosDados) {
   const team = await teams.findByIdAndUpdate(id, NovosDados, {
     new: true,
-    runValidators: true
+    runValidators: true,
   });
   if (!team) throw new Error("time não encontrado.");
   return team;
@@ -199,11 +224,30 @@ async function atualizarPosicaoMembro(teamId, memberUid, newPosition) {
   return team;
 }
 
+// NOVO: atualizar escudo/logo do time
+async function atualizarEscudoTime(teamId, logoUrl) {
+  if (!teamId || !logoUrl) {
+    throw new Error("Informe teamId e logoUrl do escudo.");
+  }
+
+  const team = await teams.findByIdAndUpdate(
+    teamId,
+    { logo_url: logoUrl },
+    { new: true, runValidators: true }
+  );
+
+  if (!team) {
+    throw new Error("Time não encontrado para atualizar escudo.");
+  }
+
+  return team;
+}
+
 async function monthRange(id) {
   const team = await buscarTime(id);
   return {
     firstMonth: firstMonthForTeam(team),
-    lastMonth: lastMonthForTeam()
+    lastMonth: lastMonthForTeam(),
   };
 }
 
@@ -219,5 +263,6 @@ module.exports = {
   firstMonthForTeam,
   lastMonthForTeam,
   monthRange,
-  atualizarPosicaoMembro
+  atualizarPosicaoMembro,
+  atualizarEscudoTime,
 };

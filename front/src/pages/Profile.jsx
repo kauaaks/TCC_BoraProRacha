@@ -155,16 +155,12 @@ export default function Profile() {
       // Pega o firebaseUid do usuário (ajuste caso seu objeto user tenha nome diferente)
       const firebaseUid = user.firebaseUid || user.uid;
 
-<<<<<<< HEAD
-      const res = await apiCall("/users/alterarEmailFirebase", {
-=======
       await verifyBeforeUpdateEmail(currentUser, trimmedEmail, {
         url: window.location.origin + "/profile",
         handleCodeInApp: false,
       });
 
       const res = await apiCall("/users/me/email", {
->>>>>>> ae10fbff46960a22a5f64b08d487844a838ae6dd
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firebaseUid, newEmail: trimmedEmail }),
@@ -175,11 +171,7 @@ export default function Profile() {
         return;
       }
 
-<<<<<<< HEAD
-      setUser((prev) => ({ ...prev, email: trimmedEmail }));
-=======
       await refreshUser();
->>>>>>> ae10fbff46960a22a5f64b08d487844a838ae6dd
 
       setShowEmailModal(false);
       alert(

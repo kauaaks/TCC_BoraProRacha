@@ -1,3 +1,4 @@
+// src/controllers/teamsController.js
 const teamsService = require('../services/teamService');
 const Users = require('../models/user.js');
 
@@ -118,6 +119,28 @@ async function atualizarPosicaoMembro(req, res) {
   }
 }
 
+// NOVO: upload de escudo/logo (foto) do time
+async function uploadEscudo(req, res) {
+  try {
+    const { id } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: "Arquivo de escudo obrigatório" });
+    }
+
+    // A URL pública que o front vai usar:
+    // se o app.js servir "/uploads" de forma estática, isso funciona:
+    const escudoUrl = `/uploads/shields/${file.filename}`;
+
+    const team = await teamsService.atualizarEscudoTime(id, escudoUrl);
+    return res.status(200).json({ team });
+  } catch (err) {
+    console.error("Erro ao fazer upload de escudo:", err);
+    return res.status(400).json({ error: err.message || "Erro ao atualizar escudo do time" });
+  }
+}
+
 module.exports = {
   listarTimes,
   buscarTime,
@@ -128,5 +151,6 @@ module.exports = {
   listarMembrosTime,
   meusTimes,
   monthRange,
-  atualizarPosicaoMembro, // <- não pode esquecer este export
+  atualizarPosicaoMembro,
+  uploadEscudo, // 👈 novo export
 };

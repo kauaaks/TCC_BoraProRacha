@@ -14,6 +14,10 @@ const MONTH_LABELS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
+// base da API para montar URL absoluta do escudo
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const toAbsolute = (u) => (u?.startsWith?.("http") ? u : `${API_BASE_URL}${u || ""}`);
+
 function StatCard({ value, label }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 flex flex-col items-center gap-2 border">
@@ -48,7 +52,7 @@ function PlayerStatCard({ player }) {
 export default function EstatisticasRepresentante() {
   const { user, apiCall } = useAuth();
 
-  const [teams, setTeams] = useState([]);          // times do representante
+  const [teams, setTeams] = useState([]);              // times do representante
   const [selectedTeam, setSelectedTeam] = useState(null); // time escolhido p/ ver stats
 
   const [teamStats, setTeamStats] = useState(null);
@@ -190,6 +194,8 @@ export default function EstatisticasRepresentante() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {teams.map((t) => {
               const id = t.id || t._id;
+              const shieldSrc = t.logo_url ? toAbsolute(t.logo_url) : null;
+
               return (
                 <button
                   key={id}
@@ -197,12 +203,23 @@ export default function EstatisticasRepresentante() {
                   className="bg-white rounded-xl shadow-md border p-6 text-left hover:ring-2 hover:ring-green-600 transition focus:outline-none"
                   onClick={() => setSelectedTeam(t)}
                 >
-                  <h2 className="font-bold text-lg text-gray-900 mb-1">
-                    {t.nome || t.name}
-                  </h2>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {t.description || "Sem descrição cadastrada"}
-                  </p>
+                  <div className="flex items-center gap-3 mb-2">
+                    {shieldSrc && (
+                      <img
+                        src={shieldSrc}
+                        alt={`Escudo de ${t.nome || t.name}`}
+                        className="w-10 h-10 rounded-full border object-cover"
+                      />
+                    )}
+                    <div>
+                      <h2 className="font-bold text-lg text-gray-900 mb-1">
+                        {t.nome || t.name}
+                      </h2>
+                      <p className="text-sm text-gray-600">
+                        {t.description || "Sem descrição cadastrada"}
+                      </p>
+                    </div>
+                  </div>
                   <p className="text-xs text-gray-500">
                     Jogadores:{" "}
                     {t.member_count ??

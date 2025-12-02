@@ -594,6 +594,8 @@ export default function Financeiro() {
         {teams.map((t) => {
           const id = String(t.id || t._id)
           const active = teamId === id
+          const shieldSrc = t.logo_url ? toAbsolute(t.logo_url) : null
+
           return (
             <div
               key={id}
@@ -603,12 +605,22 @@ export default function Financeiro() {
               onClick={() => setTeamId(id)}
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
+                {shieldSrc ? (
+                  <img
+                    src={shieldSrc}
+                    alt={`Escudo de ${t.nome || t.name}`}
+                    className="w-9 h-9 rounded-full border object-cover"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                )}
                 <div>
                   <div className="font-medium">{t.nome || t.name}</div>
-                  <div className="text-xs text-gray-500">{t.description || 'Time'}</div>
+                  <div className="text-xs text-gray-500">
+                    {t.description || 'Time'}
+                  </div>
                 </div>
               </div>
               {active && (

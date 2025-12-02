@@ -5,7 +5,7 @@ const teamsSchema = new mongoose.Schema(
     nome: { type: String, required: true },
     description: { type: String, required: true },
     monthly_fee: { type: Number, required: true },
-
+    logo_url: { type: String },
     created_by: {
       uid: { type: String, required: true },
       user_type: {
