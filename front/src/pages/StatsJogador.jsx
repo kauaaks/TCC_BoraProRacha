@@ -32,8 +32,18 @@ const MONTH_LABELS = [
   "Dec",
 ];
 
+// base do backend para montar URL absoluta (avatar + escudo)
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:5000";
+const toAbsolute = (u) => (u?.startsWith?.("http") ? u : `${API_BASE_URL}${u || ""}`);
+
 export default function EstatisticasJogador() {
   const { user, apiCall } = useAuth();
+
+  const [teams, setTeams] = useState([]);            // times em que o jogador está
+  const [selectedTeam, setSelectedTeam] = useState(null);
 
   const [profile, setProfile] = useState({});
   const [stats, setStats] = useState({});
@@ -43,24 +53,60 @@ export default function EstatisticasJogador() {
   const [ranking, setRanking] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [awards, setAwards] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  const [loadingTeams, setLoadingTeams] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(false);
   const [error, setError] = useState("");
 
+  // avatar sempre vem do contexto (igual Profile.jsx)
+  const avatarUrl = user?.avatar ? `${API_BASE_URL}${user.avatar}` : null;
+
+  // 1) Buscar times do jogador
   useEffect(() => {
     if (!user) return;
 
+    async function loadTeams() {
+      try {
+        setLoadingTeams(true);
+        setError("");
+        const res = await apiCall("/teams/meustimes");
+        const list = res?.teams || [];
+        setTeams(Array.isArray(list) ? list : []);
+        // se quiser já abrir o primeiro time automaticamente, descomente:
+        // if (list.length) setSelectedTeam(list[0]);
+      } catch (err) {
+        console.error("Erro ao buscar times do jogador:", err);
+        setTeams([]);
+        setError("Não foi possível carregar seus times.");
+      } finally {
+        setLoadingTeams(false);
+      }
+    }
+
+    loadTeams();
+  }, [user, apiCall]);
+
+  // 2) Buscar estatísticas quando um time for selecionado
+  useEffect(() => {
+    if (!user || !selectedTeam) return;
+
     async function loadPlayerStats() {
       try {
-        setLoading(true);
+        setLoadingStats(true);
         setError("");
-        const res = await apiCall("/playerstats/me");
+
+        const teamId = selectedTeam.id || selectedTeam._id;
+
+        // backend deve aceitar opcional ?teamId= para filtrar stats por time
+        const res = await apiCall(
+          `/playerstats/me?teamId=${encodeURIComponent(teamId)}`
+        );
         if (res?.error) throw new Error(res.error);
 
         const p = res.profile || {};
         const s = res.stats || {};
 
         setProfile({
-          avatar: p.avatar || null,
           name: p.name || user.displayName || "Jogador",
           position: p.position || "Atacante",
           age: p.age || 0,
@@ -94,16 +140,100 @@ export default function EstatisticasJogador() {
         setAlerts([]);
         setAwards([]);
       } finally {
-        setLoading(false);
+        setLoadingStats(false);
       }
     }
 
     loadPlayerStats();
-  }, [user, apiCall]);
+  }, [user, selectedTeam, apiCall]);
 
-  if (loading) {
+  // Tela 0: carregando times
+  if (loadingTeams) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-8">
+        <p className="text-gray-500">Carregando seus times...</p>
+      </div>
+    );
+  }
+
+  // Tela 1: seleção de time (cards iniciais)
+  if (!selectedTeam) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Estatísticas do Jogador
+        </h1>
+        <p className="text-gray-600">
+          Selecione um time para ver suas estatísticas dentro daquele elenco.
+        </p>
+
+        {teams.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Você ainda não está vinculado a nenhum time.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {teams.map((t) => {
+              const id = t.id || t._id;
+              const shieldSrc = t.logo_url ? toAbsolute(t.logo_url) : null;
+
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className="bg-white rounded-xl shadow-md border p-5 text-left hover:ring-2 hover:ring-green-600 transition focus:outline-none"
+                  onClick={() => setSelectedTeam(t)}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    {shieldSrc && (
+                      <img
+                        src={shieldSrc}
+                        alt={`Escudo de ${t.nome || t.name}`}
+                        className="w-10 h-10 rounded-full border object-cover"
+                      />
+                    )}
+                    <div>
+                      <h2 className="font-bold text-lg text-gray-900">
+                        {t.nome || t.name}
+                      </h2>
+                      <p className="text-sm text-gray-600">
+                        {t.description || "Sem descrição cadastrada"}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Jogadores:{" "}
+                    {t.member_count ??
+                      (Array.isArray(t.members) ? t.members.length : 0)}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {error && (
+          <p className="text-sm text-red-500">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Tela 2: stats para o time selecionado
+  if (loadingStats) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <button
+          type="button"
+          className="text-sm text-green-700 mb-4 underline"
+          onClick={() => {
+            setSelectedTeam(null);
+          }}
+        >
+          &larr; Voltar para seleção de times
+        </button>
         <p className="text-gray-500">Carregando estatísticas do jogador...</p>
       </div>
     );
@@ -111,6 +241,16 @@ export default function EstatisticasJogador() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
+      <button
+        type="button"
+        className="text-sm text-green-700 mb-4 underline"
+        onClick={() => {
+          setSelectedTeam(null);
+        }}
+      >
+        &larr; Voltar para seleção de times
+      </button>
+
       {error && (
         <p className="text-sm text-red-500 mb-4">
           {error}
@@ -119,10 +259,10 @@ export default function EstatisticasJogador() {
 
       {/* Perfil */}
       <div className="flex items-center gap-6 mb-10 ">
-        <div className="w-24 h-24 rounded-full bg-green-200 flex items-center justify-center text-green-900 text-4xl font-bold">
-          {profile.avatar ? (
+        <div className="w-24 h-24 rounded-full bg-green-200 flex items-center justify-center text-green-900 text-4xl font-bold overflow-hidden">
+          {avatarUrl ? (
             <img
-              src={profile.avatar}
+              src={avatarUrl}
               alt="Avatar"
               className="w-24 h-24 rounded-full object-cover"
             />
@@ -141,7 +281,12 @@ export default function EstatisticasJogador() {
           <p className="text-gray-700">
             {profile.position} • {profile.age} anos
           </p>
-          <p className="text-green-700 font-semibold">Status: {profile.status}</p>
+          <p className="text-green-700 font-semibold">
+            Status: {profile.status}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Time: {selectedTeam?.nome || selectedTeam?.name}
+          </p>
         </div>
       </div>
 
@@ -249,7 +394,7 @@ export default function EstatisticasJogador() {
         <div>
           {ranking.length === 0 ? (
             <p className="text-sm text-gray-500">
-              Ainda não há ranking de gols para o seu time.
+              Ainda não há ranking de gols para este time.
             </p>
           ) : (
             ranking
