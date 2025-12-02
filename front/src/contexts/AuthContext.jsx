@@ -19,46 +19,42 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);        
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
 
   const API_BASE_URL = "http://localhost:5000";
 
-  
   const mergeUser = (firebaseUser, mongoUser) => {
     if (!firebaseUser) return mongoUser || null;
     if (!mongoUser) return firebaseUser;
-    const merged = { ...firebaseUser, ...mongoUser };
-   
-    if (!merged.nome && firebaseUser.displayName) merged.nome = firebaseUser.displayName;
-    return merged;
+
+    return {
+      ...firebaseUser,
+      ...mongoUser,
+      nome: mongoUser.nome || firebaseUser.displayName || "",
+    };
   };
 
-  
   const fetchMongoUser = async (firebaseUid, idToken) => {
-  try {
-    const res = await fetch(
-      `${API_BASE_URL}/users/firebase/${firebaseUid}?t=${Date.now()}`,
-      {
-        headers: { Authorization: `Bearer ${idToken}` },
-      }
-    );
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/users/firebase/${firebaseUid}?t=${Date.now()}`,
+        {
+          headers: { Authorization: `Bearer ${idToken}` },
+        }
+      );
 
-    if (!res.ok) return null;
+      if (!res.ok) return null;
 
-    const data = await res.json();
-    // se o back responder { user: {...} }, pega o user;
-    // se responder o doc direto, usa o próprio data
-    return data.user || data;
-  } catch (err) {
-    console.error("Erro ao buscar usuário no MongoDB:", err);
-    return null;
-  }
-};
+      const data = await res.json();
+      return data.user || data;
+    } catch (err) {
+      console.error("Erro ao buscar usuário no MongoDB:", err);
+      return null;
+    }
+  };
 
-
-  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -68,11 +64,6 @@ export function AuthProvider({ children }) {
           localStorage.setItem("token", idToken);
 
           const mongoUser = await fetchMongoUser(firebaseUser.uid, idToken);
-
-          
-          if (mongoUser?.nome && !firebaseUser.displayName) {
-            try { await updateProfile(firebaseUser, { displayName: mongoUser.nome }) } catch {}
-          }
 
           setUser(mergeUser(firebaseUser, mongoUser));
         } catch (err) {
@@ -84,27 +75,27 @@ export function AuthProvider({ children }) {
         setToken(null);
         localStorage.removeItem("token");
       }
+
       setLoading(false);
     });
+
     return unsubscribe;
   }, []);
 
- 
+  // 🔥 Login
   const login = async (email, password) => {
     try {
       const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await getIdToken(firebaseUser);
+
       setToken(idToken);
       localStorage.setItem("token", idToken);
 
       const mongoUser = await fetchMongoUser(firebaseUser.uid, idToken);
 
-      if (mongoUser?.nome && !firebaseUser.displayName) {
-        try { await updateProfile(firebaseUser, { displayName: mongoUser.nome }) } catch {}
-      }
-
       const merged = mergeUser(firebaseUser, mongoUser);
       setUser(merged);
+
       return { success: true, user: merged };
     } catch (error) {
       console.error("Erro no login:", error);
@@ -112,12 +103,15 @@ export function AuthProvider({ children }) {
     }
   };
 
- 
+  // 🔥 Registro
   const register = async ({ email, password, nome, telefone, user_type }) => {
     try {
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
+
       const idToken = await getIdToken(firebaseUser);
-      try { await updateProfile(firebaseUser, { displayName: nome }) } catch {}
+
+      // Atualiza displayName no firebase
+      try { await updateProfile(firebaseUser, { displayName: nome }); } catch {}
 
       const res = await fetch(`${API_BASE_URL}/users/`, {
         method: "POST",
@@ -140,6 +134,7 @@ export function AuthProvider({ children }) {
       }
 
       const merged = mergeUser(firebaseUser, data);
+
       setUser(merged);
       setToken(idToken);
       localStorage.setItem("token", idToken);
@@ -151,28 +146,22 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // 🔥 Esqueci a senha
   const resetPassword = async (email) => {
-  try {
-    const actionCodeSettings = {
-      url: "http://localhost:5173/login", // Troque para a URL real do seu app!
-      handleCodeInApp: true
-    };
-    await sendPasswordResetEmail(auth, email, actionCodeSettings);
-    return { success: true };
-  } catch (error) {
-    console.error("Erro ao enviar redefinição de senha:", error);
-    if (error.code === 'auth/user-not-found') {
-      return { success: false, error: "E-mail não cadastrado." };
+    try {
+      const actionCodeSettings = {
+        url: "http://localhost:5173/login",
+        handleCodeInApp: true
+      };
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      return { success: true };
+    } catch (error) {
+      console.error("Erro ao enviar redefinição de senha:", error);
+      return { success: false, error: "Erro ao enviar email" };
     }
-    if (error.code === 'auth/invalid-email') {
-      return { success: false, error: "E-mail inválido." };
-    }
-    return { success: false, error: "Erro ao enviar e-mail de redefinição." };
-  }
-};
+  };
 
-
-
+  // 🔥 Logout
   const logout = async () => {
     try {
       await signOut(auth);
@@ -183,7 +172,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  
+  // 🔥 apiCall universal (upload + JSON)
   const apiCall = async (endpoint, options = {}) => {
     const currentToken = token || localStorage.getItem("token");
     const isFormData = options?.body instanceof FormData;
@@ -196,51 +185,46 @@ export function AuthProvider({ children }) {
         ...(options.headers || {})
       },
       credentials: "include",
-      cache: 'no-store',
+      cache: "no-store"
     });
 
-    let data;
-    try {
-      data = await res.json();
-    } catch {
-      data = { error: "Resposta inválida do servidor" };
-    }
+    const data = await res.json().catch(() => ({ error: "Resposta inválida" }));
 
-    if (res.status === 401) {
-      console.warn("Token expirado, deslogando...");
-      await logout();
-      throw new Error("Sessão expirada");
-    }
-
-    if (!res.ok) {
-      throw new Error(data.error || "Erro na requisição");
-    }
+    if (!res.ok) throw new Error(data.error || "Erro na requisição");
 
     return data;
   };
 
-  
+
   const updateUser = (partial) => {
     setUser((prev) => (prev ? { ...prev, ...partial } : partial));
   };
 
-  
+
   const syncMongoUser = async () => {
     const current = auth.currentUser;
     if (!current) return null;
+
     const idToken = await getIdToken(current, true);
     const mongoUser = await fetchMongoUser(current.uid, idToken);
+
     const merged = mergeUser(current, mongoUser);
+
     setUser(merged);
     return merged;
   };
 
-  
+
   const refreshUser = async () => {
     const current = auth.currentUser;
+
     if (current) {
-      try { await current.reload() } catch {}
+      try { await current.reload(); }
+      catch (err) {
+        console.error("Erro ao recarregar Firebase:", err);
+      }
     }
+
     return await syncMongoUser();
   };
 
@@ -252,10 +236,10 @@ export function AuthProvider({ children }) {
     resetPassword,
     logout,
     apiCall,
-    setUser,        
-    updateUser,     
-    syncMongoUser,  
-    refreshUser,    
+    setUser,
+    updateUser,
+    syncMongoUser,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -12,7 +12,7 @@ import {
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Profile() {
-  const { user, apiCall, setUser } = useAuth();
+  const { user, apiCall, refreshUser } = useAuth();
 
   const displayName = user?.nome || user?.displayName || "";
   const username =
@@ -24,14 +24,14 @@ export default function Profile() {
     user?.avatar ? `${API_BASE_URL}${user.avatar}` : undefined;
 
   const [showNameModal, setShowNameModal] = useState(false);
-  const [name, setName] = useState(displayName);
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(initialAvatar);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef(null);
 
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [newEmail, setNewEmail] = useState(user?.email || "");
+  const [newEmail, setNewEmail] = useState("");
   const [emailPassword, setEmailPassword] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
 
@@ -40,6 +40,14 @@ export default function Profile() {
       setAvatarUrl(`${API_BASE_URL}${user.avatar}`);
     }
   }, [user?.avatar]);
+
+  useEffect(() => {
+    if (user) {
+      setName(user?.nome || user?.displayName || "");
+      setNewEmail(user?.email || "");
+    }
+  }, [user]);
+
 
   const openName = () => {
     setName(user?.nome || user?.displayName || "");
@@ -54,8 +62,10 @@ export default function Profile() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nome: name }),
       });
+
       if (res?.user) {
-        setUser(res.user);
+        // Atualiza o usuário completo usando refreshUser para não perder dados do Firebase
+        await refreshUser();
         setShowNameModal(false);
       } else {
         alert(res?.message || "Falha ao atualizar nome");
@@ -85,18 +95,22 @@ export default function Profile() {
 
     try {
       setUploadingAvatar(true);
+
       const res = await apiCall("/perfil/avatar", {
         method: "PATCH",
         body: fd,
       });
 
-      if (res?.success && res?.user) {
-        setUser(res.user);
-        if (res.user.avatar) {
-          setAvatarUrl(`${API_BASE_URL}${res.user.avatar}`);
-        }
-      } else {
+      if (!res?.success) {
         alert(res?.message || "Falha ao atualizar avatar");
+        return;
+      }
+
+      // 🔹 Atualiza o usuário completo após alterar avatar
+      const updatedUser = await refreshUser();
+
+      if (updatedUser?.avatar) {
+        setAvatarUrl(`${API_BASE_URL}${updatedUser.avatar}`);
       }
     } catch (err) {
       console.error("Erro ao atualizar avatar:", err);
@@ -146,7 +160,7 @@ export default function Profile() {
       await verifyBeforeUpdateEmail(currentUser, trimmedEmail, {
         url: window.location.origin + "/profile",
         handleCodeInApp: false,
-      }); 
+      });
 
       const res = await apiCall("/users/me/email", {
         method: "PUT",
@@ -159,10 +173,7 @@ export default function Profile() {
         return;
       }
 
-      setUser((prev) => ({
-        ...prev,
-        email: trimmedEmail,
-      }));
+      await refreshUser();
 
       setShowEmailModal(false);
       alert(
