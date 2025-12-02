@@ -21,7 +21,7 @@ async function createAdmin() {
     console.log("Criando usuário admin no Firebase Auth...");
 
     const firebaseUser = await admin.auth().createUser({
-      email: "adminInsano1@gmail.com",
+      email: "adminInsano@gmail.com",
       password: "admin234",
       displayName: "Administrador",
     });
