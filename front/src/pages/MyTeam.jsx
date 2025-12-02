@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Users, UserPlus, Trophy, Link as LinkIcon, RefreshCcw } from 'lucide-react'
@@ -210,6 +210,8 @@ export default function MyTeam() {
     }
   }
 
+  const fileInputRef = useRef(null)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -301,27 +303,67 @@ export default function MyTeam() {
 
                   {/* Upload de escudo: apenas representante */}
                   {isRep && (
-                    <div className="flex flex-col gap-2">
-                      <span className="text-xs font-medium text-gray-700">Alterar escudo</span>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={shieldUploading}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            const id = activeTeam.id || activeTeam._id
-                            if (file && id) {
-                              handleShieldUpload(id, file)
-                            }
-                          }}
-                        />
-                        {shieldUploading && (
-                          <span className="text-xs text-gray-500">Enviando...</span>
-                        )}
+                      <div className="flex flex-col gap-3">
+                        <div 
+                          className={`group relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer hover:border-primary hover:bg-primary/5 hover:shadow-md ${
+                            shieldUploading ? 'opacity-60 cursor-not-allowed' : ''
+                          }`}
+                          onClick={() => !shieldUploading && fileInputRef.current?.click()}
+                        >
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            disabled={shieldUploading}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              const id = activeTeam.id || activeTeam._id
+                              if (file && id) {
+                                handleShieldUpload(id, file)
+                              }
+                            }}
+                          />
+                          
+                          <div className="flex flex-col items-center gap-3">
+                            {/* Preview ou Placeholder */}
+                            {activeTeam.logo_url ? (
+                              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                                <img 
+                                  src={activeTeam.logo_url.startsWith('http') ? activeTeam.logo_url : `${API_BASE_URL}${activeTeam.logo_url}`}
+                                  alt="Escudo atual" 
+                                  className="w-16 h-16 rounded-full object-cover shadow-md"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-dashed border-gray-300 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
+                            
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium text-gray-900">
+                                {shieldUploading ? 'Enviando escudo...' : 'Clique ou arraste para alterar'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">PNG, JPG (máx. 2MB) - 60x60px ideal</p>
+                            </div>
+                          </div>
+                          
+                          {/* Overlay de loading */}
+                          {shieldUploading && (
+                            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-xl">
+                              <div className="flex items-center gap-2 text-sm text-primary">
+                                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                <span>Atualizando...</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>                 
                       </div>
-                    </div>
-                  )}
+                    )}
+
                 </CardContent>
               </Card>
 

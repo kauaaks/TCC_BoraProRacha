@@ -827,8 +827,8 @@ export default function GamesRepresentante() {
       </header>
 
       <Card>
-        <CardHeader className="flex flex-col gap-3">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <CardHeader className="w-full space-y-3">
+          <div className="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
               <CardTitle>Jogos</CardTitle>
               <CardDescription>

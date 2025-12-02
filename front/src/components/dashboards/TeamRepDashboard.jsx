@@ -72,6 +72,10 @@ export default function TeamRepDashboard({ data, teamId }) {
     navigate("/my-team");
   };
 
+    const goToGames = () => {
+    navigate("/Games");
+  };
+
   // criação de time
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -339,7 +343,7 @@ export default function TeamRepDashboard({ data, teamId }) {
             <Button
               variant="outline"
               className="h-20 flex-col space-y-2"
-              onClick={() => navigate("/schedule-game")}
+              onClick={goToGames}
             >
               <Calendar className="w-6 h-6" />
               <span className="text-sm">Agendar Jogo</span>
