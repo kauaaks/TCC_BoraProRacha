@@ -7,7 +7,7 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updatePassword,
-  updateEmail,
+  verifyBeforeUpdateEmail,
 } from "firebase/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -145,7 +145,7 @@ export default function Profile() {
     setShowEmailModal(true);
   };
 
-  // Troca de e-mail: reautentica no Firebase, atualiza auth e depois o backend
+  // Troca de e-mail: reautentica no Firebase, dispara verificação e depois atualiza o backend
   const saveEmail = async () => {
     try {
       setEmailLoading(true);
@@ -182,8 +182,11 @@ export default function Profile() {
       );
       await reauthenticateWithCredential(currentUser, credential);
 
-      // atualiza e-mail no Firebase Auth
-      await updateEmail(currentUser, trimmedEmail);
+      // dispara e-mail de verificação para o NOVO e-mail
+      await verifyBeforeUpdateEmail(currentUser, trimmedEmail, {
+        url: window.location.origin + "/profile",
+        handleCodeInApp: false,
+      });
 
       // atualiza e-mail no backend
       const res = await apiCall("/users/me/email", {
@@ -202,7 +205,9 @@ export default function Profile() {
       await refreshUser();
 
       setShowEmailModal(false);
-      alert("E-mail atualizado com sucesso.");
+      alert(
+        "Enviamos um link de confirmação para o novo e-mail. Confirme lá para concluir a troca."
+      );
     } catch (err) {
       console.error("Erro ao atualizar e-mail:", err);
       if (err.code === "auth/wrong-password") {
@@ -211,6 +216,10 @@ export default function Profile() {
         alert("Este e-mail já está em uso.");
       } else if (err.code === "auth/invalid-email") {
         alert("E-mail inválido.");
+      } else if (err.code === "auth/operation-not-allowed") {
+        alert(
+          "Operação não permitida na configuração atual do Firebase. Verifique as opções de login do projeto."
+        );
       } else {
         alert("Erro ao atualizar e-mail. Tente novamente.");
       }
