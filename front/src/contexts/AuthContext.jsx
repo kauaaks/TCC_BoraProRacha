@@ -82,7 +82,7 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  // 🔥 Login
+
   const login = async (email, password) => {
     try {
       const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password);
@@ -96,7 +96,7 @@ export function AuthProvider({ children }) {
       const merged = mergeUser(firebaseUser, mongoUser);
       setUser(merged);
 
-      // 🔹 Força atualização do usuário para refletir dados completos
+
       await refreshUser();
 
       return { success: true, user: merged };
@@ -106,14 +106,14 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // 🔥 Registro
+ 
   const register = async ({ email, password, nome, telefone, user_type }) => {
     try {
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
 
       const idToken = await getIdToken(firebaseUser);
 
-      // Atualiza displayName no firebase
+
       try { await updateProfile(firebaseUser, { displayName: nome }); } catch {}
 
       const res = await fetch(`${API_BASE_URL}/users/`, {
@@ -142,7 +142,6 @@ export function AuthProvider({ children }) {
       setToken(idToken);
       localStorage.setItem("token", idToken);
 
-      // 🔹 Força atualização do usuário para refletir dados completos
       await refreshUser();
 
       return { success: true, user: merged };
@@ -152,7 +151,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // 🔥 Esqueci a senha
+
   const resetPassword = async (email) => {
     try {
       const actionCodeSettings = {
@@ -167,7 +166,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // 🔥 Logout
+ 
   const logout = async () => {
     try {
       await signOut(auth);
@@ -178,7 +177,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // 🔥 apiCall universal (upload + JSON)
+
   const apiCall = async (endpoint, options = {}) => {
     const currentToken = token || localStorage.getItem("token");
     const isFormData = options?.body instanceof FormData;
