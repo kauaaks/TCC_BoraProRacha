@@ -7,6 +7,7 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updatePassword,
+  updateEmail,
 } from "firebase/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -17,9 +18,12 @@ export default function Profile() {
   const displayName = user?.nome || user?.displayName || "";
   const username =
     user?.username ||
-    (displayName?.replace(/\s/g, "").toLowerCase() || user?.email?.split("@")[0]);
+    (displayName?.replace(/\s/g, "").toLowerCase() ||
+      user?.email?.split("@")[0]);
 
-  const initialAvatar = user?.avatar ? `${API_BASE_URL}${user.avatar}` : undefined;
+  const initialAvatar = user?.avatar
+    ? `${API_BASE_URL}${user.avatar}`
+    : undefined;
 
   const [showNameModal, setShowNameModal] = useState(false);
   const [name, setName] = useState("");
@@ -46,8 +50,6 @@ export default function Profile() {
     }
   }, [user?.avatar]);
 
-  // Funções existentes para nome, avatar, email (mantidas)
-
   useEffect(() => {
     if (user) {
       setName(user?.nome || user?.displayName || "");
@@ -55,29 +57,38 @@ export default function Profile() {
     }
   }, [user]);
 
-
-
   const openName = () => {
     setName(user?.nome || user?.displayName || "");
     setShowNameModal(true);
   };
 
+  // Atualiza apenas no backend (Mongo), usando /users/me
   const saveName = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      alert("Informe um nome válido.");
+      return;
+    }
+
     try {
       setLoading(true);
-      const res = await apiCall(`users/firebase/${user.firebaseUid || user.uid}`, {
+
+      const res = await apiCall("/users/me", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome: name }),
+        body: JSON.stringify({ nome: trimmed }),
       });
 
-      if (res?.user) {
-        // Atualiza o usuário completo usando refreshUser para não perder dados do Firebase
-        await refreshUser();
-        setShowNameModal(false);
-      } else {
-        alert(res?.message || "Falha ao atualizar nome");
+      if (res?.error) {
+        alert(res.error || "Falha ao atualizar nome");
+        return;
       }
+
+      await refreshUser();
+      setShowNameModal(false);
+    } catch (err) {
+      console.error("Erro ao atualizar nome:", err);
+      alert("Erro ao atualizar nome. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -114,7 +125,6 @@ export default function Profile() {
         return;
       }
 
-      // 🔹 Atualiza o usuário completo após alterar avatar
       const updatedUser = await refreshUser();
 
       if (updatedUser?.avatar) {
@@ -135,7 +145,7 @@ export default function Profile() {
     setShowEmailModal(true);
   };
 
-  // Função corrigida para troca de email com rota e payload corretos
+  // Troca de e-mail: reautentica no Firebase, atualiza auth e depois o backend
   const saveEmail = async () => {
     try {
       setEmailLoading(true);
@@ -152,40 +162,64 @@ export default function Profile() {
         return;
       }
 
-      // Pega o firebaseUid do usuário (ajuste caso seu objeto user tenha nome diferente)
-      const firebaseUid = user.firebaseUid || user.uid;
+      if (!emailPassword.trim()) {
+        alert("Digite sua senha atual para confirmar.");
+        return;
+      }
 
-      await verifyBeforeUpdateEmail(currentUser, trimmedEmail, {
-        url: window.location.origin + "/profile",
-        handleCodeInApp: false,
-      });
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
 
+      if (!currentUser) {
+        alert("Usuário não autenticado. Faça login novamente.");
+        return;
+      }
+
+      // reautentica com a senha atual
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        emailPassword
+      );
+      await reauthenticateWithCredential(currentUser, credential);
+
+      // atualiza e-mail no Firebase Auth
+      await updateEmail(currentUser, trimmedEmail);
+
+      // atualiza e-mail no backend
       const res = await apiCall("/users/me/email", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firebaseUid, newEmail: trimmedEmail }),
+        body: JSON.stringify({ newEmail: trimmedEmail }),
       });
 
       if (res?.error) {
-        alert(res.error || "Não foi possível atualizar o e-mail no servidor");
+        alert(
+          res.error || "Não foi possível atualizar o e-mail no servidor."
+        );
         return;
       }
 
       await refreshUser();
 
       setShowEmailModal(false);
-      alert(
-        "E-mail atualizado com sucesso. Verifique seu novo e-mail para confirmação."
-      );
+      alert("E-mail atualizado com sucesso.");
     } catch (err) {
       console.error("Erro ao atualizar e-mail:", err);
-      alert("Erro ao atualizar e-mail. Tente novamente.");
+      if (err.code === "auth/wrong-password") {
+        alert("Senha atual incorreta.");
+      } else if (err.code === "auth/email-already-in-use") {
+        alert("Este e-mail já está em uso.");
+      } else if (err.code === "auth/invalid-email") {
+        alert("E-mail inválido.");
+      } else {
+        alert("Erro ao atualizar e-mail. Tente novamente.");
+      }
     } finally {
       setEmailLoading(false);
     }
   };
 
-  // Função para trocar senha com validações completas
+  // Troca de senha
   const savePassword = async () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       alert("Preencha todos os campos da senha");
@@ -203,7 +237,6 @@ export default function Profile() {
       alert("A senha deve ter pelo menos 8 caracteres.");
       return;
     }
-    // Aqui você pode inserir regex para maior complexidade, se desejar
 
     setPasswordLoading(true);
     try {
@@ -266,7 +299,9 @@ export default function Profile() {
             )}
 
             <div>
-              <div className="font-semibold text-base text-gray-900">{displayName}</div>
+              <div className="font-semibold text-base text-gray-900">
+                {displayName}
+              </div>
               <div className="text-sm text-gray-500">{username}</div>
             </div>
 
@@ -288,7 +323,9 @@ export default function Profile() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="font-normal text-sm text-gray-600 w-40">Nome completo</span>
+            <span className="font-normal text-sm text-gray-600 w-40">
+              Nome completo
+            </span>
             <span className="font-medium text-gray-800">{displayName}</span>
             <button
               onClick={openName}
@@ -300,8 +337,12 @@ export default function Profile() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="font-normal text-sm text-gray-600 w-40">E-mail</span>
-            <span className="font-medium text-gray-800 truncate max-w-xs">{user?.email}</span>
+            <span className="font-normal text-sm text-gray-600 w-40">
+              E-mail
+            </span>
+            <span className="font-medium text-gray-800 truncate max-w-xs">
+              {user?.email}
+            </span>
             <button
               onClick={openEmailModal}
               className="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center gap-1 text-xs border border-gray-200 shadow"
@@ -312,7 +353,9 @@ export default function Profile() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="font-normal text-sm text-gray-600 w-40">Senha</span>
+            <span className="font-normal text-sm text-gray-600 w-40">
+              Senha
+            </span>
             <button
               onClick={() => setShowPasswordModal(true)}
               className="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center gap-1 text-xs border border-gray-200 shadow"
@@ -325,25 +368,33 @@ export default function Profile() {
 
         {/* Rodapé e links */}
         <h2 className="text-lg font-semibold mb-4 text-gray-800">Sistema</h2>
-        <div className="text-gray-400 mb-2">BoraProRacha© {new Date().getFullYear()}</div>
+        <div className="text-gray-400 mb-2">
+          BoraProRacha© {new Date().getFullYear()}
+        </div>
         <div className="flex gap-2">
-          <Link to="/terms-of-use" className="text-xs underline hover:text-[#00B04F]">
+          <Link
+            to="/terms-of-use"
+            className="text-xs underline hover:text-[#00B04F]"
+          >
             Termos de Uso
           </Link>
           <span>|</span>
-          <Link to="/privacy-policy" className="text-xs underline hover:text-[#2196F3]">
+          <Link
+            to="/privacy-policy"
+            className="text-xs underline hover:text-[#2196F3]"
+          >
             Política de Privacidade
           </Link>
         </div>
       </div>
 
-      {/* Modais */}
-
       {/* Modal Trocar Nome */}
       {showNameModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 flex flex-col gap-6">
-            <h3 className="font-bold text-2xl text-gray-700 select-none">Alterar nome completo</h3>
+            <h3 className="font-bold text-2xl text-gray-700 select-none">
+              Alterar nome completo
+            </h3>
             <input
               className="rounded-lg border border-black-300 p-3 placeholder:text-black-300 focus:outline-none focus:ring-2 focus:ring-appsociety-black"
               value={name}
@@ -351,7 +402,10 @@ export default function Profile() {
               placeholder="Seu nome"
             />
             <div className="flex justify-end gap-4 pt-4 border-t border-black-200">
-              <button onClick={() => setShowNameModal(false)} className="px-6 py-3 font-semibold rounded-full border border-green-400 text-appsociety-green transition hover:bg-green-50">
+              <button
+                onClick={() => setShowNameModal(false)}
+                className="px-6 py-3 font-semibold rounded-full border border-green-400 text-appsociety-green transition hover:bg-green-50"
+              >
                 Cancelar
               </button>
               <button
@@ -370,9 +424,13 @@ export default function Profile() {
       {showEmailModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-6 z-50">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 flex flex-col gap-6">
-            <h3 className="font-bold text-2xl text-gray-700 select-none">Alterar e-mail</h3>
+            <h3 className="font-bold text-2xl text-gray-700 select-none">
+              Alterar e-mail
+            </h3>
 
-            <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700 select-none">Novo e-mail</label>
+            <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700 select-none">
+              Novo e-mail
+            </label>
             <input
               className="rounded-lg border border-black-300 p-3 placeholder:text-black-300 focus:outline-none focus:ring-2 focus:ring-appsociety-black"
               type="email"
@@ -381,7 +439,9 @@ export default function Profile() {
               placeholder="novoemail@exemplo.com"
             />
 
-            <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700 select-none">Senha atual</label>
+            <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700 select-none">
+              Senha atual
+            </label>
             <input
               className="rounded-lg border border-black-300 p-3 placeholder:text-black-300 focus:outline-none focus:ring-2 focus:ring-appsociety-black"
               type="password"
@@ -391,12 +451,18 @@ export default function Profile() {
             />
 
             <div className="flex justify-end gap-4 pt-4 border-t border-black-200">
-              <button onClick={() => setShowEmailModal(false)} className="px-6 py-3 font-semibold rounded-full border border-green-400 text-appsociety-green transition hover:bg-green-50 disabled:opacity-50" disabled={emailLoading}>
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="px-6 py-3 font-semibold rounded-full border border-green-400 text-appsociety-green transition hover:bg-green-50 disabled:opacity-50"
+                disabled={emailLoading}
+              >
                 Cancelar
               </button>
               <button
                 onClick={saveEmail}
-                disabled={emailLoading || !newEmail.trim() || !emailPassword.trim()}
+                disabled={
+                  emailLoading || !newEmail.trim() || !emailPassword.trim()
+                }
                 className="px-6 py-3 font-semibold rounded-full bg-appsociety-green text-white shadow-md transition hover:bg-green-700 disabled:opacity-50"
               >
                 {emailLoading ? "Salvando..." : "Salvar"}
@@ -410,7 +476,9 @@ export default function Profile() {
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 flex flex-col gap-6">
-            <h3 className="font-bold text-2xl text-gray-700 select-none">Trocar Senha</h3>
+            <h3 className="font-bold text-2xl text-gray-700 select-none">
+              Trocar Senha
+            </h3>
 
             <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700 select-none">
               Senha atual
@@ -457,19 +525,7 @@ export default function Profile() {
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  if (!currentPassword) return alert("Digite sua senha atual.");
-                  if (!newPassword) return alert("Digite a nova senha.");
-                  if (!confirmNewPassword) return alert("Confirme a nova senha.");
-                  if (newPassword !== confirmNewPassword)
-                    return alert("A confirmação não corresponde à nova senha.");
-                  if (newPassword === currentPassword)
-                    return alert("A nova senha deve ser diferente da atual.");
-                  if (newPassword.length < 8)
-                    return alert("A senha deve ter pelo menos 8 caracteres.");
-
-                  savePassword();
-                }}
+                onClick={savePassword}
                 disabled={passwordLoading}
                 className="px-6 py-3 font-semibold rounded-full bg-appsociety-green text-white shadow-md transition hover:bg-green-700 disabled:opacity-50"
               >

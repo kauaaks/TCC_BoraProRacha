@@ -15,7 +15,12 @@ export default function Dashboard() {
     displayName: user.displayName,
   });
 
-  const [data, setData] = useState({ teams: [], games: [], payments: [], users: [] });
+  const [data, setData] = useState({
+    teams: [],
+    games: [],
+    payments: [],
+    users: [],
+  });
   const [loading, setLoading] = useState(true);
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [hasTeam, setHasTeam] = useState(false);
@@ -33,7 +38,7 @@ export default function Dashboard() {
       }
       try {
         const res = await apiCall("/teams/meustimes?t=" + Date.now()).catch(() =>
-          apiCall("/teams/me?t=" + Date.now()),
+          apiCall("/teams/me?t=" + Date.now())
         );
         const list = Array.isArray(res?.teams)
           ? res.teams
@@ -64,19 +69,24 @@ export default function Dashboard() {
             apiCall("/teams"),
             apiCall("/games"),
             apiCall("/payments"),
-            apiCall("/users/usuarios"), // ajuste para seu endpoint real de usuários
+            apiCall("/users/usuarios")
           );
         } else if (user?.user_type === "gestor_campo") {
           promises.push(apiCall("/fields"), apiCall("/games"), apiCall("/teams"));
         } else if (user?.user_type === "representante_time") {
-          promises.push(apiCall("/teams"), apiCall("/games"), apiCall("/payments"));
+          // mantém nomes, só foca nos times do representante
+          promises.push(
+            apiCall("/teams/meustimes"),
+            apiCall("/games"),
+            apiCall("/payments")
+          );
         } else if (user?.user_type === "jogador") {
           promises.push(apiCall("/games"));
         }
 
         const results = await Promise.allSettled(promises);
         const [a, b, c, d] = results.map((r) =>
-          r.status === "fulfilled" ? r.value : [],
+          r.status === "fulfilled" ? r.value : []
         );
 
         if (user?.user_type === "admin") {
@@ -90,11 +100,34 @@ export default function Dashboard() {
               : [],
             users: Array.isArray(d?.users) ? d.users : Array.isArray(d) ? d : [],
           });
-        } else {
+        } else if (user?.user_type === "gestor_campo") {
           setData({
-            teams: a?.teams || a?.fields || [],
-            games: b?.games || [],
-            payments: c?.payments || c?.teams || [],
+            teams: Array.isArray(a?.fields) ? a.fields : Array.isArray(a) ? a : [],
+            games: Array.isArray(b?.games) ? b.games : Array.isArray(b) ? b : [],
+            payments: Array.isArray(c?.payments)
+              ? c.payments
+              : Array.isArray(c?.teams)
+              ? c.teams
+              : [],
+            users: [],
+          });
+        } else if (user?.user_type === "representante_time") {
+          setData({
+            teams: Array.isArray(a?.teams) ? a.teams : Array.isArray(a) ? a : [],
+            games: Array.isArray(b?.games) ? b.games : Array.isArray(b) ? b : [],
+            payments: Array.isArray(c?.payments)
+              ? c.payments
+              : Array.isArray(c)
+              ? c
+              : [],
+            users: [],
+          });
+        } else {
+          // jogador
+          setData({
+            teams: [],
+            games: Array.isArray(a?.games) ? a.games : Array.isArray(a) ? a : [],
+            payments: [],
             users: [],
           });
         }
@@ -116,8 +149,8 @@ export default function Dashboard() {
         <div className="mb-6 bg-yellow-100 border-l-4 border-yellow-400 p-4 rounded shadow">
           <strong>Você ainda não faz parte de nenhum time!</strong>
           <div className="mt-2">
-            Solicite o código/link do time a um representante e clique no botão abaixo
-            para ingressar.
+            Solicite o código/link do time a um representante e clique no botão
+            abaixo para ingressar.
           </div>
           <button
             onClick={() => (window.location.href = "/invitations/join")}
