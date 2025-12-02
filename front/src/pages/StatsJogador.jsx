@@ -32,7 +32,6 @@ const MONTH_LABELS = [
   "Dec",
 ];
 
-// base do backend para montar URL absoluta (avatar + escudo)
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
@@ -42,7 +41,7 @@ const toAbsolute = (u) => (u?.startsWith?.("http") ? u : `${API_BASE_URL}${u || 
 export default function EstatisticasJogador() {
   const { user, apiCall } = useAuth();
 
-  const [teams, setTeams] = useState([]);            // times em que o jogador está
+  const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
 
   const [profile, setProfile] = useState({});
@@ -58,10 +57,8 @@ export default function EstatisticasJogador() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [error, setError] = useState("");
 
-  // avatar sempre vem do contexto (igual Profile.jsx)
   const avatarUrl = user?.avatar ? `${API_BASE_URL}${user.avatar}` : null;
 
-  // 1) Buscar times do jogador
   useEffect(() => {
     if (!user) return;
 
@@ -72,8 +69,6 @@ export default function EstatisticasJogador() {
         const res = await apiCall("/teams/meustimes");
         const list = res?.teams || [];
         setTeams(Array.isArray(list) ? list : []);
-        // se quiser já abrir o primeiro time automaticamente, descomente:
-        // if (list.length) setSelectedTeam(list[0]);
       } catch (err) {
         console.error("Erro ao buscar times do jogador:", err);
         setTeams([]);
@@ -86,7 +81,6 @@ export default function EstatisticasJogador() {
     loadTeams();
   }, [user, apiCall]);
 
-  // 2) Buscar estatísticas quando um time for selecionado
   useEffect(() => {
     if (!user || !selectedTeam) return;
 
@@ -97,7 +91,6 @@ export default function EstatisticasJogador() {
 
         const teamId = selectedTeam.id || selectedTeam._id;
 
-        // backend deve aceitar opcional ?teamId= para filtrar stats por time
         const res = await apiCall(
           `/playerstats/me?teamId=${encodeURIComponent(teamId)}`
         );
@@ -147,7 +140,6 @@ export default function EstatisticasJogador() {
     loadPlayerStats();
   }, [user, selectedTeam, apiCall]);
 
-  // Tela 0: carregando times
   if (loadingTeams) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-8">
@@ -156,7 +148,6 @@ export default function EstatisticasJogador() {
     );
   }
 
-  // Tela 1: seleção de time (cards iniciais)
   if (!selectedTeam) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
@@ -221,7 +212,6 @@ export default function EstatisticasJogador() {
     );
   }
 
-  // Tela 2: stats para o time selecionado
   if (loadingStats) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-8">
@@ -257,7 +247,6 @@ export default function EstatisticasJogador() {
         </p>
       )}
 
-      {/* Perfil */}
       <div className="flex items-center gap-6 mb-10 ">
         <div className="w-24 h-24 rounded-full bg-green-200 flex items-center justify-center text-green-900 text-4xl font-bold overflow-hidden">
           {avatarUrl ? (
@@ -290,14 +279,12 @@ export default function EstatisticasJogador() {
         </div>
       </div>
 
-      {/* Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-10">
         <StatCard value={stats.matches ?? 0} label="Partidas" />
         <StatCard value={stats.gols ?? 0} label="Gols" />
         <StatCard value={stats.assists ?? 0} label="Assistências" />
       </div>
 
-      {/* Evolução */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <ChartCard title="Evolução dos Gols por mês">
           <Line
@@ -340,7 +327,6 @@ export default function EstatisticasJogador() {
         </ChartCard>
       </div>
 
-      {/* Últimos jogos */}
       <CardSection title="Últimos jogos">
         <table className="w-full text-sm border-collapse">
           <thead className="bg-gray-100">
@@ -389,7 +375,6 @@ export default function EstatisticasJogador() {
         </table>
       </CardSection>
 
-      {/* Ranking */}
       <CardSection title="Ranking de Gols do Time">
         <div>
           {ranking.length === 0 ? (
@@ -417,7 +402,6 @@ export default function EstatisticasJogador() {
         </div>
       </CardSection>
 
-      {/* Premiações */}
       <CardSection title="Premiações e Destaques">
         {awards.length === 0 && (
           <p className="italic text-gray-600">Nenhuma premiação registrada.</p>
@@ -430,7 +414,6 @@ export default function EstatisticasJogador() {
         ))}
       </CardSection>
 
-      {/* Alertas */}
       <CardSection title="Alertas e Feedback" alert>
         {alerts.length === 0 && (
           <p className="italic text-gray-600">Nenhum alerta no momento.</p>
@@ -446,7 +429,6 @@ export default function EstatisticasJogador() {
   );
 }
 
-// Componente reutilizável para estruturar os cards de gráfico com título
 function ChartCard({ title, children }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 mb-8">
@@ -456,7 +438,6 @@ function ChartCard({ title, children }) {
   );
 }
 
-// Componente reutilizável para seções com título
 function CardSection({ title, children, alert }) {
   return (
     <section
@@ -470,7 +451,6 @@ function CardSection({ title, children, alert }) {
   );
 }
 
-// Componente para cards numéricos simples
 function StatCard({ value, label }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 flex flex-col items-center gap-2 border">

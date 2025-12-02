@@ -202,7 +202,6 @@ async function removerComprovante({ team_id, user_id, month, ctx }) {
       const abs = path.resolve(process.cwd(), "." + doc.receipt_url);
       fs.unlink(abs, () => {});
     } catch (e) {
-      // ignore
     }
   }
 

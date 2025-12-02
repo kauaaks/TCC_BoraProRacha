@@ -11,7 +11,6 @@ import { Eye, EyeOff, Users, Shield, X } from 'lucide-react'
 import logoImg from '../assets/logo6.png'
 import './Login.css'
 
-// VALIDAÇÃO DE SENHA FORTE
 function validarSenhaForte(senha) {
   const regras = [
     { regex: /.{8,}/, msg: "Mínimo de 8 caracteres" },
@@ -33,13 +32,11 @@ export default function Login() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
 
-  // Estados do formulário de login
   const [loginData, setLoginData] = useState({
     email: '',
     password: ''
   })
 
-  // Estados do formulário de registro
   const [registerData, setRegisterData] = useState({
     name: '',
     email: '',
@@ -48,10 +45,8 @@ export default function Login() {
     user_type: 'jogador'
   })
 
-  // Estado para feedback da senha
   const [senhaFeedback, setSenhaFeedback] = useState({ valido: false, erros: [] });
 
-  // Estados do modal "Esqueceu a senha"
   const [isForgotOpen, setIsForgotOpen] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotMessage, setForgotMessage] = useState('')
@@ -62,7 +57,6 @@ export default function Login() {
     { value: 'gestor_campo', label: 'Gestor de Campo', icon: Shield }
   ]
 
-  // Função de login
   const handleLogin = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -78,7 +72,6 @@ export default function Login() {
     setIsLoading(false)
   }
 
-  // Função de registro
   const handleRegister = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -110,7 +103,6 @@ export default function Login() {
     setIsLoading(false)
   }
 
-  // Handler do modal "Esqueceu a senha"
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -129,7 +121,6 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4 relative">
 
-      {/* Modal "Esqueceu a senha" */}
       {isForgotOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 transition-all fade-in">
           <Card className="w-full max-w-sm shadow-2xl border-0 p-8 fade-in">
@@ -194,7 +185,6 @@ export default function Login() {
         </div>
       )}
 
-      {/* MODAL POLÍTICA DE PRIVACIDADE */}
       {showPrivacyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 transition-all fade-in">
           <Card className="w-full max-w-3xl max-h-[80vh] overflow-y-auto shadow-2xl border-0 p-6 relative">
@@ -211,7 +201,6 @@ export default function Login() {
       )}
 
       <div className="w-full max-w-md space-y-6 fade-in">
-        {/* Logo e Título */}
         <div className="text-center space-y-4">
           <img src={logoImg} alt="Logo" className="mx-auto w-30 h-30 rounded-2xl shadow-lg" />
           <div>
@@ -220,7 +209,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Formulários */}
         <Card className="shadow-xl border-0">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Bem-vindo</CardTitle>
@@ -235,7 +223,6 @@ export default function Login() {
                 <TabsTrigger value="register">Criar Conta</TabsTrigger>
               </TabsList>
 
-              {/* Formulário de Login */}
               <TabsContent value="login" className="space-y-4 mt-6">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
@@ -302,7 +289,6 @@ export default function Login() {
                 </form>
               </TabsContent>
 
-              {/* Formulário de Registro */}
               <TabsContent value="register" className="space-y-4 mt-6">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
@@ -411,7 +397,6 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        {/* Links para Termos e Política mantidos */}
         <div className="text-center text-sm text-white">
           <p>Ao criar uma conta, você concorda com nossos</p>
           <p>
@@ -436,7 +421,7 @@ export default function Login() {
     </div>
   )
 }
-// Componente de Política de Privacidade dentro do modal
+
 function PrivacyPolicyContent() {
   return (
     <div className="space-y-4">
@@ -492,7 +477,6 @@ function PrivacyPolicyContent() {
   )
 }
 
-// Componente de Termos de Uso
 function TermsOfUseContent() {
   return (
     <div className="space-y-4">

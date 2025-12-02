@@ -33,7 +33,6 @@ export default function TeamRepDashboard({ data, teamId }) {
 
   const teamsCount = Array.isArray(data?.teams) ? data.teams.length : 0;
 
-  // total de jogadores de todos os meus times
   const [totalPlayers, setTotalPlayers] = useState(0);
 
   useEffect(() => {
@@ -76,7 +75,6 @@ export default function TeamRepDashboard({ data, teamId }) {
     navigate("/Games");
   };
 
-  // criação de time
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
@@ -155,7 +153,6 @@ export default function TeamRepDashboard({ data, teamId }) {
         await apiCall("/users/me?t=" + Date.now()).catch(() => null);
       } catch {}
       if (!ignore) {
-        // poderia setar algum estado de perfil, se necessário
       }
     })();
     return () => {
@@ -226,7 +223,6 @@ export default function TeamRepDashboard({ data, teamId }) {
         </p>
       </div>
 
-      {/* Cards de resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card
           className="cursor-pointer hover:shadow-md transition"
@@ -259,7 +255,6 @@ export default function TeamRepDashboard({ data, teamId }) {
         </Card>
       </div>
 
-      {/* Ações rápidas */}
       <Card>
         <CardHeader>
           <CardTitle>Ações Rápidas</CardTitle>
@@ -267,7 +262,6 @@ export default function TeamRepDashboard({ data, teamId }) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Novo Time */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="h-20 flex-col space-y-2">
@@ -339,7 +333,6 @@ export default function TeamRepDashboard({ data, teamId }) {
               </DialogContent>
             </Dialog>
 
-            {/* Agendar jogo */}
             <Button
               variant="outline"
               className="h-20 flex-col space-y-2"
@@ -349,7 +342,6 @@ export default function TeamRepDashboard({ data, teamId }) {
               <span className="text-sm">Agendar Jogo</span>
             </Button>
 
-            {/* Ver estatísticas */}
             <Button
               variant="outline"
               className="h-20 flex-col space-y-2"

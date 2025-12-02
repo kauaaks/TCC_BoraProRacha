@@ -22,7 +22,6 @@ router.get(
   panelaoController.listarPaneloes
 );
 
-// Salvar sorteio
 router.patch(
   "/:id/draw",
   verifyFirebaseToken,

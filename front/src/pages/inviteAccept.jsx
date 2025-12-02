@@ -9,7 +9,7 @@ export default function InviteAccept() {
   const { token } = useParams()
   const navigate = useNavigate()
   const { apiCall } = useAuth()
-  const [status, setStatus] = useState('ready') // ready | joining | success | error
+  const [status, setStatus] = useState('ready')
   const [error, setError] = useState('')
 
   const entrar = async () => {

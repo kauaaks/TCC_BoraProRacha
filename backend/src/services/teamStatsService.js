@@ -14,7 +14,7 @@ function buildWinsByMonth(games, teamId) {
 
     const d = new Date(g.scheduled_date);
     const year = d.getFullYear();
-    const month = d.getMonth() + 1; // 1-12
+    const month = d.getMonth() + 1;
     const key = `${year}-${month}`;
 
     if (!map.has(key)) {

@@ -1,6 +1,5 @@
 const teamStatsService = require("../services/teamStatsService");
 
-// GET /teamstats/:teamId
 async function getTeamStats(req, res) {
   try {
     const { teamId } = req.params;

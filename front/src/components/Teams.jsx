@@ -158,7 +158,7 @@ export default function Teams() {
 
   const q = searchTerm.trim().toLowerCase();
   const filteredTeams = useMemo(() => {
-    const base = allNormalized; // ← agora usa TODOS os times de /teams
+    const base = allNormalized;
     if (!q) return base;
     return base.filter((t) => {
       const nome = (t.nome || "").toLowerCase();

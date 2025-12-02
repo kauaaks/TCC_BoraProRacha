@@ -15,11 +15,11 @@ function logger(req, res, next) {
 
     
     if (res.statusCode >= 500) {
-      console.error("❌ [SERVER ERROR]", log);
+      console.error("[SERVER ERROR]", log);
     } else if (res.statusCode >= 400) {
-      console.warn("⚠️ [CLIENT ERROR]", log);
+      console.warn("[CLIENT ERROR]", log);
     } else {
-      console.log("✅ [REQUEST]", log);
+      console.log("[REQUEST]", log);
     }
   });
 

@@ -51,7 +51,6 @@ async function deleteTeam(req, res) {
   }
 }
 
-// 🔹 Admin cria usuário (Firebase + Mongo + opcional vínculo a time)
 async function criarUsuarioAdmin(req, res) {
   try {
     const { nome, telefone, user_type, email, password, team_id } = req.body;

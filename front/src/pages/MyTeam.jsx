@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import GameStatsForm from '../components/forms/GameStatsForm'
-import QRCode from 'qrcode' // gerar QR local
+import QRCode from 'qrcode'
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const POSITION_OPTIONS = [
@@ -38,22 +38,19 @@ export default function MyTeam() {
   const isRep = role === 'representante_time'
   const isJog = role === 'jogador'
 
-  const [teams, setTeams] = useState([])              // lista de times do usuário
-  const [activeTeam, setActiveTeam] = useState(null)  // time selecionado para ver detalhes/membros
+  const [teams, setTeams] = useState([])              
+  const [activeTeam, setActiveTeam] = useState(null) 
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // convite
-  const [invite, setInvite] = useState(null) // { token, url, qrCode?, expiraEm }
+  const [invite, setInvite] = useState(null)
   const inviteUrl = invite?.url || ''
   const inviteToken = invite?.token || ''
   const inviteExpires = invite?.expiraEm ? new Date(invite.expiraEm).toLocaleString('pt-BR') : null
   const [inviteLoading, setInviteLoading] = useState(false)
 
-  // loading por membro na troca de posição
-  const [positionSaving, setPositionSaving] = useState({}) // { uid: true | false }
+  const [positionSaving, setPositionSaving] = useState({})
 
-  // upload escudo
   const [shieldUploading, setShieldUploading] = useState(false)
 
   useEffect(() => {
@@ -108,7 +105,7 @@ export default function MyTeam() {
   }
 
   const gerarConvite = async (teamId) => {
-    if (!isRep) return // só representantes geram convite
+    if (!isRep) return
     if (!teamId || inviteLoading) return
     try {
       setInviteLoading(true)
@@ -147,7 +144,6 @@ export default function MyTeam() {
     }
   }
 
-  // atualizar posição do jogador (chama PUT /teams/:id/members/:uid/position)
   const handlePositionChange = async (memberUid, newPosition) => {
     if (!isRep || !activeTeam) return
     const teamId = activeTeam.id || activeTeam._id
@@ -160,7 +156,6 @@ export default function MyTeam() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ position: newPosition }),
       })
-      // atualiza localmente o array de members
       setMembers(prev =>
         prev.map(m =>
           m.uid === memberUid ? { ...m, position: newPosition } : m
@@ -174,28 +169,25 @@ export default function MyTeam() {
     }
   }
 
-  // upload de escudo (foto) do time - usa PUT /teams/:id/escudo com FormData[memory:87]
   const handleShieldUpload = async (teamId, file) => {
     if (!teamId || !file) return
     try {
       setShieldUploading(true)
       const formData = new FormData()
-      formData.append('escudo', file) // mesmo nome usado no multer single("escudo")
+      formData.append('escudo', file)
 
       const res = await apiCall(`/teams/${teamId}/escudo`, {
         method: 'PUT',
-        body: formData, // não setar Content-Type manualmente aqui
+        body: formData,
       })
 
       if (res?.team) {
         const updated = res.team
 
-        // atualiza time ativo
         setActiveTeam(prev =>
           prev && (prev._id === updated._id || prev.id === updated._id) ? updated : prev
         )
 
-        // atualiza lista de times
         setTeams(prev =>
           (prev || []).map(t =>
             (t._id === updated._id || t.id === updated._id) ? updated : t
@@ -225,7 +217,6 @@ export default function MyTeam() {
         <div className="text-red-500">Nenhum time vinculado a este usuário.</div>
       ) : (
         <>
-          {/* Lista de times do usuário */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {teams.map((t) => {
               const id = t.id || t._id
@@ -270,7 +261,6 @@ export default function MyTeam() {
             })}
           </div>
 
-          {/* Detalhes do time selecionado */}
           {activeTeam && (
             <>
               <Card>
@@ -301,7 +291,6 @@ export default function MyTeam() {
                       .toLocaleDateString('pt-BR')}
                   </p>
 
-                  {/* Upload de escudo: apenas representante */}
                   {isRep && (
                       <div className="flex flex-col gap-3">
                         <div 
@@ -326,7 +315,6 @@ export default function MyTeam() {
                           />
                           
                           <div className="flex flex-col items-center gap-3">
-                            {/* Preview ou Placeholder */}
                             {activeTeam.logo_url ? (
                               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
                                 <img 
@@ -351,7 +339,6 @@ export default function MyTeam() {
                             </div>
                           </div>
                           
-                          {/* Overlay de loading */}
                           {shieldUploading && (
                             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-xl">
                               <div className="flex items-center gap-2 text-sm text-primary">
@@ -367,7 +354,6 @@ export default function MyTeam() {
                 </CardContent>
               </Card>
 
-              {/* Convidar membros: apenas representante */}
               {isRep ? (
                 <Card>
                   <CardHeader>
@@ -435,7 +421,6 @@ export default function MyTeam() {
                   </CardContent>
                 </Card>
               ) : (
-                // Aviso para jogador
                 <Card>
                   <CardHeader>
                     <CardTitle>Convites</CardTitle>
@@ -447,7 +432,6 @@ export default function MyTeam() {
                 </Card>
               )}
 
-              {/* Membros */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -474,7 +458,6 @@ export default function MyTeam() {
                           <div className="flex flex-col">
                             <p className="font-medium">{member.nome || 'Desconhecido'}</p>
 
-                            {/* Select de posição: só representante vê, para jogadores e para ele mesmo */}
                             {canEditPosition && (
                               <div className="mt-1 text-xs text-gray-600 flex items-center gap-2">
                                 <span>Posição:</span>
@@ -493,7 +476,6 @@ export default function MyTeam() {
                               </div>
                             )}
 
-                            {/* Jogador comum só enxerga a posição, não edita */}
                             {!canEditPosition && member.position && (
                               <span className="mt-1 text-xs text-gray-600">
                                 Posição{' '}

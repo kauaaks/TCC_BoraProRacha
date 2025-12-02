@@ -103,7 +103,7 @@ mongoose.connect(process.env.MONGO_URI)
       console.log(` Front permitido: ${FRONT}`);
     });
   })
-  .catch(err => console.error('❌ Erro ao conectar no MongoDB:', err));
+  .catch(err => console.error('Erro ao conectar no MongoDB:', err));
 
 
 app.use((err, req, res, next) => {

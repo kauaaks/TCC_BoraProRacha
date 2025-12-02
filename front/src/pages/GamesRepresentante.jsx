@@ -666,14 +666,11 @@ export default function GamesRepresentante() {
 
     setGames(updated);
 
-    // mantém o objeto do modal sincronizado, caso você não feche
     setSortModalGame((prev) =>
       prev ? { ...prev, status: "terminado" } : prev
     );
 
     closeSortModal();
-    // remove esta linha para não trocar de aba automaticamente
-    // setActiveTab("finalizados");
 
     alert("Jogo finalizado com sucesso!");
   } catch (error) {
@@ -778,7 +775,6 @@ export default function GamesRepresentante() {
                     </div>
                   </div>
                   <div className="text-appsociety-green">
-                    {/* seta que já existia */}
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -1195,7 +1191,6 @@ export default function GamesRepresentante() {
                       variant="outline"
                       className="flex items-center gap-2"
                       onClick={() => {
-                        // se quiser, pode abrir alguma ajuda/explicação aqui
                       }}
                       disabled={submitting}
                     >
@@ -1225,7 +1220,6 @@ export default function GamesRepresentante() {
               </div>
             )}
 
-                          {/* Panelas */}
           {sortModalGame.squads && sortModalGame.squads.length > 0 ? (
             <div className="mt-6">
               <h3 className="font-semibold text-gray-800 mb-3">
@@ -1266,7 +1260,6 @@ export default function GamesRepresentante() {
             </div>
           )}
 
-          {/* Mini‑torneio */}
           {sortModalGame.tournament &&
             Array.isArray(sortModalGame.tournament.matches) &&
             sortModalGame.tournament.matches.length > 0 && (

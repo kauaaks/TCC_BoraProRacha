@@ -9,7 +9,6 @@ export default function PrivacyPolicy() {
 
         <h1 className="text-2xl font-bold mb-4">Política de Privacidade</h1>
 
-        {/* Aviso de consentimento */}
         <p className="mb-4 font-medium text-gray-700">
           Ao acessar nosso site ou baixar o aplicativo <strong>BoraProRacha</strong>, você concorda com esta Política de Privacidade e com o tratamento dos seus dados pessoais, de acordo com a LGPD (Lei Geral de Proteção de Dados - Lei nº 13.709/2018).
         </p>
@@ -64,7 +63,6 @@ export default function PrivacyPolicy() {
           Esta Política de Privacidade pode ser atualizada periodicamente. Recomendamos que revise esta página regularmente.
         </p>
 
-        {/* Botão Voltar */}
         <div className="flex justify-end mt-6">
           <button
             onClick={() => navigate(-1)}

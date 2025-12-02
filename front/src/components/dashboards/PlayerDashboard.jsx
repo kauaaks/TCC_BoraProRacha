@@ -22,7 +22,6 @@ export default function PlayerDashboard({ data }) {
 
   const allGames = Array.isArray(data?.games) ? data.games : []
 
-  // só jogos agendados (status 'aceito') e com data futura
   const now = new Date()
   const upcomingGames = allGames
     .filter((g) => g.status === 'aceito' && g.scheduled_date && new Date(g.scheduled_date) > now)

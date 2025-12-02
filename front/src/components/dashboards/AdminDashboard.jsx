@@ -30,7 +30,7 @@ export default function AdminDashboard({ data }) {
   const goToTeamsList = () => navigate("/teams");
   const goToNewTeam = () => navigate("/teams/new");
   const goToGames = () => navigate("/games");
-  const goToUsers = () => navigate("/profile"); // ajuste se tiver tela de gestão
+  const goToUsers = () => navigate("/profile");
   const goToNewUser = () => navigate("/admin/users/new");
 
   const teamsCount = data?.teams?.length || 0;
@@ -53,9 +53,7 @@ export default function AdminDashboard({ data }) {
         </p>
       </div>
 
-      {/* Cards principais */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Estatísticas (sem número) */}
         <Card
           className="cursor-pointer hover:shadow-md transition"
           onClick={goToStats}
@@ -72,7 +70,6 @@ export default function AdminDashboard({ data }) {
           </CardContent>
         </Card>
 
-        {/* Financeiro (sem número) */}
         <Card
           className="cursor-pointer hover:shadow-md transition"
           onClick={goToPayments}
@@ -89,7 +86,6 @@ export default function AdminDashboard({ data }) {
           </CardContent>
         </Card>
 
-        {/* Usuários */}
         <Card
           className="cursor-pointer hover:shadow-md transition"
           onClick={goToUsers}
@@ -104,7 +100,6 @@ export default function AdminDashboard({ data }) {
         </Card>
       </div>
 
-      {/* Ações rápidas */}
       <Card>
         <CardHeader>
           <CardTitle>Ações Rápidas</CardTitle>
@@ -112,7 +107,6 @@ export default function AdminDashboard({ data }) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Novo time */}
             <Button
               variant="outline"
               className="h-20 flex-col space-y-2"
@@ -122,7 +116,6 @@ export default function AdminDashboard({ data }) {
               <span className="text-sm">Novo time</span>
             </Button>
 
-            {/* Criar usuário */}
             <Button
               variant="outline"
               className="h-20 flex-col space-y-2"

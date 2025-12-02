@@ -39,7 +39,6 @@ export default function Layout({ children }) {
 
   const nomeVisivel = (user?.nome || user?.displayName || user?.name || "").trim();
 
-  // pega caminho do avatar de várias fontes possíveis
   const rawAvatar =
     user?.avatar || user?.photoURL || user?.photoUrl || user?.photo || null;
 
@@ -49,7 +48,6 @@ export default function Layout({ children }) {
       : `${API_BASE_URL}${rawAvatar}`
     : null;
 
-  // 🔹 Logs de debug
   console.log("Layout user:", user);
   console.log("Layout rawAvatar:", rawAvatar);
   console.log("Layout avatarUrl:", avatarUrl);
@@ -227,14 +225,12 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200 shadow-sm">
           <SidebarContent />
         </div>
       </div>
 
-      {/* Mobile bar */}
       <div className="lg:hidden">
         <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
           <div className="flex items-center space-x-3">
@@ -303,7 +299,6 @@ export default function Layout({ children }) {
         </div>
       </div>
 
-      {/* Main content */}
       <div className="lg:pl-72">
         <main className="flex-1">
           <div className="p-4 lg:p-8">{children}</div>

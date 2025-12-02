@@ -62,7 +62,6 @@ export default function Profile() {
     setShowNameModal(true);
   };
 
-  // Atualiza apenas no backend (Mongo), usando /users/me
   const saveName = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
@@ -145,7 +144,6 @@ export default function Profile() {
     setShowEmailModal(true);
   };
 
-  // Troca de e-mail: reautentica no Firebase, dispara verificação e depois atualiza o backend
   const saveEmail = async () => {
     try {
       setEmailLoading(true);
@@ -175,20 +173,17 @@ export default function Profile() {
         return;
       }
 
-      // reautentica com a senha atual
       const credential = EmailAuthProvider.credential(
         user.email,
         emailPassword
       );
       await reauthenticateWithCredential(currentUser, credential);
 
-      // dispara e-mail de verificação para o NOVO e-mail
       await verifyBeforeUpdateEmail(currentUser, trimmedEmail, {
         url: window.location.origin + "/profile",
         handleCodeInApp: false,
       });
 
-      // atualiza e-mail no backend
       const res = await apiCall("/users/me/email", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -228,7 +223,6 @@ export default function Profile() {
     }
   };
 
-  // Troca de senha
   const savePassword = async () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       alert("Preencha todos os campos da senha");
@@ -375,7 +369,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Rodapé e links */}
         <h2 className="text-lg font-semibold mb-4 text-gray-800">Sistema</h2>
         <div className="text-gray-400 mb-2">
           BoraProRacha© {new Date().getFullYear()}
@@ -397,7 +390,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Modal Trocar Nome */}
       {showNameModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 flex flex-col gap-6">
@@ -429,7 +421,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Modal Trocar E-mail */}
       {showEmailModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-6 z-50">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 flex flex-col gap-6">
@@ -481,7 +472,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Modal Trocar Senha */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 flex flex-col gap-6">

@@ -3,7 +3,7 @@ const notificationService = require("../services/notificationService");
 async function listarAvisosDoTimeParaRep(req, res) {
   try {
     const { teamId } = req.params;
-    const firebaseUid = req.user.uid; // vem do verifyFirebaseToken
+    const firebaseUid = req.user.uid;
 
     const avisos = await notificationService.listarAvisosDoTimeParaRep(
       teamId,

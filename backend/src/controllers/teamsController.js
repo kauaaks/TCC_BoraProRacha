@@ -1,4 +1,3 @@
-// src/controllers/teamsController.js
 const teamsService = require('../services/teamService');
 const Users = require('../models/user.js');
 
@@ -106,7 +105,6 @@ async function monthRange(req, res) {
   }
 }
 
-// NOVO: atualizar posição de um membro do time
 async function atualizarPosicaoMembro(req, res) {
   try {
     const { id, uid } = req.params;
@@ -119,7 +117,6 @@ async function atualizarPosicaoMembro(req, res) {
   }
 }
 
-// NOVO: upload de escudo/logo (foto) do time
 async function uploadEscudo(req, res) {
   try {
     const { id } = req.params;
@@ -129,8 +126,6 @@ async function uploadEscudo(req, res) {
       return res.status(400).json({ error: "Arquivo de escudo obrigatório" });
     }
 
-    // A URL pública que o front vai usar:
-    // se o app.js servir "/uploads" de forma estática, isso funciona:
     const escudoUrl = `/uploads/shields/${file.filename}`;
 
     const team = await teamsService.atualizarEscudoTime(id, escudoUrl);
@@ -152,5 +147,5 @@ module.exports = {
   meusTimes,
   monthRange,
   atualizarPosicaoMembro,
-  uploadEscudo, // 👈 novo export
+  uploadEscudo,
 };

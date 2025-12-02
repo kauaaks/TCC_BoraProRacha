@@ -1,4 +1,3 @@
-// src/routes/teamsRoutes.js
 const express = require("express");
 const router = express.Router();
 
@@ -9,9 +8,6 @@ const multer = require("multer");
 const teamsController = require("../controllers/teamsController");
 const { verifyFirebaseToken } = require("../middlewares/verifyFirebaseToken");
 
-// =======================
-// MULTER LOCAL PARA ESCUDOS
-// =======================
 const shieldsDir = path.join(__dirname, "..", "uploads", "shields");
 
 if (!fs.existsSync(shieldsDir)) {
@@ -40,22 +36,17 @@ const uploadShields = multer({
   },
 });
 
-// =======================
-// ROTAS
-// =======================
 
 router.get("/", teamsController.listarTimes);
 router.get("/me", verifyFirebaseToken, teamsController.meuTime);
 router.get("/meustimes", verifyFirebaseToken, teamsController.meusTimes);
 router.get("/:id/members", verifyFirebaseToken, teamsController.listarMembrosTime);
 
-// NOVA ROTA: upload de escudo (foto)
-// PUT /teams/:id/escudo
 router.put(
   "/:id/escudo",
   verifyFirebaseToken,
-  uploadShields.single("escudo"),   // campo "escudo" no FormData
-  teamsController.uploadEscudo      // controller só chama service
+  uploadShields.single("escudo"),   
+  teamsController.uploadEscudo      
 );
 
 router.put(

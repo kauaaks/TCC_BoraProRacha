@@ -32,7 +32,6 @@ router.delete(
   adminController.deleteTeam
 );
 
-// 🔹 Admin cria usuário (Firebase + Mongo + opcional time)
 router.post(
   "/users",
   adminAuth,

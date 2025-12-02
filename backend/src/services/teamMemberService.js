@@ -37,7 +37,6 @@ async function criarMembro(dados) {
     monthly_payment_status: monthly_payment_status || undefined
   });
 
-  // Cria/garante um pagamento pendente para o mês de referência
   try {
     const team = await Times.findById(team_id).lean();
     const userObjId = new mongoose.Types.ObjectId(user_id);
@@ -59,9 +58,8 @@ async function criarMembro(dados) {
         }
       },
       { upsert: true, new: true }
-    ); // [web:41][web:44]
+    );
   } catch (e) {
-    // não bloquear fluxo de membro por erro no pagamento; logue para inspeção
     console.error('[team_memberService.criarMembro] upsert payment error:', e.message);
   }
 

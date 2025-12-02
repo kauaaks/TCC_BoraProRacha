@@ -6,7 +6,6 @@ async function criarPanelao(req, res) {
     const uid = req.user?.uid;
     const { nTimes, is_tournament, scheduled_date, duration, place, note } = req.body;
 
-    // Corrigido: apenas log do valor ou tipo, sem chamar toISOString
     console.log('[BACK] Payload panelão:', { 
       nTimes, 
       is_tournament, 
@@ -23,7 +22,7 @@ async function criarPanelao(req, res) {
       note,
     });
 
-    console.log('[BACK] ✅ Panelão criado:', novoPanelao._id, { nTimes, is_tournament });
+    console.log('[BACK] Panelão criado:', novoPanelao._id, { nTimes, is_tournament });
     res.status(201).json(novoPanelao);
   } catch (error) {
     console.error("Erro ao criar panelão:", error);
@@ -51,7 +50,7 @@ async function salvarSorteio(req, res) {
     console.log('[BACK] Salvando sorteio:', id, 'com', squads.length, 'times');
 
     const panelao = await panelaoService.salvarSorteio(id, squads, uid);
-    console.log('[BACK] ✅ Sorteio salvo:', { id, nTimes: squads.length, hasTournament: !!panelao.tournament });
+    console.log('[BACK] Sorteio salvo:', { id, nTimes: squads.length, hasTournament: !!panelao.tournament });
     res.json(panelao);
   } catch (error) {
     console.error("Erro ao salvar sorteio:", error);

@@ -28,7 +28,6 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* Login */}
       <Route
         path="/login"
         element={user ? <Navigate to="/dashboard" /> : <Login />}
@@ -65,7 +64,6 @@ function AppRoutes() {
         }
       />
 
-      {/* Dashboard para qualquer usuário autenticado */}
       <Route
         path="/dashboard"
         element={
@@ -86,7 +84,6 @@ function AppRoutes() {
           </PrivateRoute>
        }
       />
-      {/* Painel Admin - (se ainda quiser manter /admin) */}
       <Route
         path="/admin"
         element={
@@ -109,7 +106,6 @@ function AppRoutes() {
         }
       />
 
-      {/* Painel Representante / Jogador */}
       <Route
         path="/my-team"
         element={
@@ -120,7 +116,6 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
-      {/* form de novo time (admin) */}
         <Route
           path="/teams/new"
           element={
@@ -132,7 +127,6 @@ function AppRoutes() {
         }
       />
 
-      {/* Funcionalidades acessíveis a qualquer usuário autenticado */}
       <Route
         path="/teams"
         element={

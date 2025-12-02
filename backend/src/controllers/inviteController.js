@@ -3,7 +3,6 @@ const { gerarTokenConvite, entrarNoTime } = require("../services/inviteService")
 const Invite = require("../models/invite");
 const Teams = require("../models/teams");
 
-// Mantém apenas req/res; delega toda a lógica à service
 
 async function gerarConvite(req, res) {
   try {
@@ -39,7 +38,7 @@ async function gerarConvite(req, res) {
     console.error("[invite/gerar] erro:", e);
     return res.status(400).json({ error: e.message || "Falha ao gerar convite" });
   }
-} // [web:144]
+} 
 
 async function entrarNoTimeController(req, res) {
   try {
@@ -51,7 +50,7 @@ async function entrarNoTimeController(req, res) {
     console.error("[invite/entrar] erro:", e);
     return res.status(400).json({ error: e.message || "Falha ao entrar no time" });
   }
-} // [web:144]
+}
 
 module.exports = {
   gerarConvite,

@@ -1,8 +1,6 @@
-// src/services/teamService.js
 const teams = require('../models/teams');
 const user = require('../models/user');
 
-// Utils
 function toUidArray(arr) {
   return (Array.isArray(arr) ? arr : [])
     .map((x) => {
@@ -40,13 +38,10 @@ function normalizeTeam(doc) {
     created_by_firebaseUid: created_by_uid,
     representatives: toUidArray(doc.representatives),
     members: toUidArray(doc.members),
-
-    // 👇 novo campo para o escudo/foto
     logo_url: doc.logo_url || "",
   };
 }
 
-// Helpers de mês (apenas na service)
 function toYearMonth(d) {
   const dt = new Date(d || Date.now());
   const y = dt.getUTCFullYear();
@@ -65,7 +60,6 @@ function lastMonthForTeam() {
   return toYearMonth(Date.now());
 }
 
-// Funções públicas já existentes
 async function listarTimes() {
   return await teams.find();
 }
@@ -90,7 +84,6 @@ async function meuTime(uid) {
     name: doc.nome,
     description: doc.description || "",
     created_at: doc.created_at || doc.createdAt || new Date(),
-    // 👇 também devolve escudo aqui
     logo_url: doc.logo_url || "",
   };
 }
@@ -205,7 +198,6 @@ async function deletarTime(id) {
   return { message: "time deletado com sucesso." };
 }
 
-// NOVO: atualizar posição de um membro do time
 async function atualizarPosicaoMembro(teamId, memberUid, newPosition) {
   if (!teamId || !memberUid || !newPosition) {
     throw new Error("Informe teamId, uid do jogador e nova posição.");
@@ -224,7 +216,6 @@ async function atualizarPosicaoMembro(teamId, memberUid, newPosition) {
   return team;
 }
 
-// NOVO: atualizar escudo/logo do time
 async function atualizarEscudoTime(teamId, logoUrl) {
   if (!teamId || !logoUrl) {
     throw new Error("Informe teamId e logoUrl do escudo.");

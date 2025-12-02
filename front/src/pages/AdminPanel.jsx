@@ -60,7 +60,6 @@ export default function AdminPanel() {
     return <Navigate to="/" replace />;
   }
 
-  // Placeholder de criação (substitua por integração real depois)
   const handleCreateUser = (e) => {
     e.preventDefault();
     setOpenUserModal(false);
@@ -76,7 +75,6 @@ export default function AdminPanel() {
     <div className="p-6 space-y-10">
       <h1 className="text-3xl font-bold text-gray-900">Painel do Administrador</h1>
 
-      {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-2">
         {cards.map((card) => (
           <div
@@ -89,7 +87,6 @@ export default function AdminPanel() {
         ))}
       </div>
 
-      {/* Pendências/Aprovações */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
         <h2 className="text-xl font-semibold mb-4 text-gray-900">Pendências para aprovação</h2>
         {pendencias.length > 0 ? (
@@ -133,7 +130,6 @@ export default function AdminPanel() {
         )}
       </div>
 
-      {/* Log de atividades */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
         <h2 className="text-xl font-semibold mb-4 text-gray-900">Últimas atividades administrativas</h2>
         <ul className="pl-2 space-y-2">
@@ -146,7 +142,6 @@ export default function AdminPanel() {
         </ul>
       </div>
 
-      {/* Ações rápidas */}
       <div>
         <h2 className="text-xl font-semibold mb-2 text-gray-900">Ações rápidas</h2>
         <div className="flex flex-wrap gap-2">
@@ -164,20 +159,17 @@ export default function AdminPanel() {
           </button>
           <button
             className="bg-gray-200 font-semibold text-gray-900 px-4 py-2 rounded hover:bg-gray-300 transition-colors"
-            // onClick={() => navegar para /admin/roles ou abrir modal de gerenciamento}
           >
             Gerenciar Papéis
           </button>
           <button
             className="bg-gray-200 font-semibold text-gray-900 px-4 py-2 rounded hover:bg-gray-300 transition-colors"
-            // onClick={() => implementar exportação}
           >
             Exportar Dados
           </button>
         </div>
       </div>
 
-      {/* Modal Criar Usuário */}
       <Modal
         open={openUserModal}
         onClose={() => setOpenUserModal(false)}
@@ -205,7 +197,6 @@ export default function AdminPanel() {
         </form>
       </Modal>
 
-      {/* Modal Criar Time */}
       <Modal
         open={openTeamModal}
         onClose={() => setOpenTeamModal(false)}

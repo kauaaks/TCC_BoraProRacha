@@ -6,7 +6,6 @@ const { verifyFirebaseToken } = require("../middlewares/verifyFirebaseToken");
 const { attachUserRole } = require("../middlewares/attachUserRole");
 const { checkRole } = require("../middlewares/checkRole");
 
-// Apenas representantes veem avisos financeiros do time
 router.get(
   "/team/:teamId",
   verifyFirebaseToken,

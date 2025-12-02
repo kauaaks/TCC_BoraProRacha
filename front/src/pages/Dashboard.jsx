@@ -25,7 +25,6 @@ export default function Dashboard() {
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [hasTeam, setHasTeam] = useState(false);
 
-  // Checar times do jogador para mostrar banner se não tiver nenhum
   useEffect(() => {
     let alive = true;
     async function checkTeams() {
@@ -74,7 +73,6 @@ export default function Dashboard() {
         } else if (user?.user_type === "gestor_campo") {
           promises.push(apiCall("/fields"), apiCall("/games"), apiCall("/teams"));
         } else if (user?.user_type === "representante_time") {
-          // mantém nomes, só foca nos times do representante
           promises.push(
             apiCall("/teams/meustimes"),
             apiCall("/games"),

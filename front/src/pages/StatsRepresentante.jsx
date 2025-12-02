@@ -14,7 +14,6 @@ const MONTH_LABELS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-// base da API para montar URL absoluta do escudo
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const toAbsolute = (u) => (u?.startsWith?.("http") ? u : `${API_BASE_URL}${u || ""}`);
 
@@ -52,8 +51,8 @@ function PlayerStatCard({ player }) {
 export default function EstatisticasRepresentante() {
   const { user, apiCall } = useAuth();
 
-  const [teams, setTeams] = useState([]);              // times do representante
-  const [selectedTeam, setSelectedTeam] = useState(null); // time escolhido p/ ver stats
+  const [teams, setTeams] = useState([]);             
+  const [selectedTeam, setSelectedTeam] = useState(null);
 
   const [teamStats, setTeamStats] = useState(null);
   const [playerDetails, setPlayerDetails] = useState([]);
@@ -67,7 +66,6 @@ export default function EstatisticasRepresentante() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [error, setError] = useState("");
 
-  // 1) Buscar times do representante ao carregar página
   useEffect(() => {
     if (!user) return;
 
@@ -90,7 +88,6 @@ export default function EstatisticasRepresentante() {
     loadTeams();
   }, [user, apiCall]);
 
-  // 2) Buscar estatísticas quando um time for selecionado
   useEffect(() => {
     if (!user || !selectedTeam) return;
 
@@ -107,7 +104,6 @@ export default function EstatisticasRepresentante() {
 
         const overview = statsRes.overview || {};
 
-        // vitórias por mês → array de 12 posições
         const winsByMonth = Array.isArray(statsRes.winsByMonth)
           ? statsRes.winsByMonth
           : [];
@@ -125,7 +121,6 @@ export default function EstatisticasRepresentante() {
           winsPerMonth,
         });
 
-        // jogadores (sem amarelos por enquanto)
         const players = Array.isArray(statsRes.players) ? statsRes.players : [];
         setPlayerDetails(
           players.map((p, index) => ({
@@ -137,7 +132,6 @@ export default function EstatisticasRepresentante() {
           }))
         );
 
-        // distribuição por posição
         const pos = Array.isArray(statsRes.positionsDistribution)
           ? statsRes.positionsDistribution
           : [];
@@ -150,7 +144,6 @@ export default function EstatisticasRepresentante() {
           setPieDetail({ labels: [], players: [] });
         }
 
-        // alertas (quando existir no backend)
         const alertsArr = Array.isArray(statsRes.alerts) ? statsRes.alerts : [];
         setAlerts(
           alertsArr.map((a, index) => ({
@@ -173,7 +166,6 @@ export default function EstatisticasRepresentante() {
     loadStats();
   }, [user, selectedTeam, apiCall]);
 
-  // Fase 1: escolher time (cards)
   if (!selectedTeam) {
     return (
       <div className="space-y-6 fade-in">
@@ -240,7 +232,6 @@ export default function EstatisticasRepresentante() {
     );
   }
 
-  // Fase 2: mostrar estatísticas do time escolhido
   if (loadingStats || !teamStats) {
     return (
       <div className="max-w-6xl mx-auto px-8 pt-8 pb-4">

@@ -9,7 +9,6 @@ async function updateAvatar({ firebaseUid, avatarRelativePath }) {
     throw new Error("Usuário não encontrado");
   }
 
-  // se tiver avatar antigo local, remove (opcional)
   if (
     user.avatar &&
     user.avatar.startsWith("/uploads/avatars/") &&
