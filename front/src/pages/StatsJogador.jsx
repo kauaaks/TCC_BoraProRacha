@@ -279,7 +279,7 @@ export default function EstatisticasJogador() {
         <div>
           <h1 className="text-2xl font-bold">{profile.name}</h1>
           <p className="text-gray-700">
-            {profile.position} • {profile.age} anos
+            {profile.position}
           </p>
           <p className="text-green-700 font-semibold">
             Status: {profile.status}

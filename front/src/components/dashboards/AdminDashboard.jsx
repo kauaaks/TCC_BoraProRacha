@@ -61,8 +61,9 @@ export default function AdminDashboard({ data }) {
           onClick={goToStats}
         >
           <CardHeader className="flex items-center">
-            <BarChart3 className="w-5 h-5 text-primary" />
+            
             <CardTitle>Estatísticas</CardTitle>
+            <BarChart3 />
           </CardHeader>
           <CardContent>
             <div className="text-sm text-gray-500">
@@ -77,8 +78,9 @@ export default function AdminDashboard({ data }) {
           onClick={goToPayments}
         >
           <CardHeader className="flex items-center">
-            <CreditCard className="w-5 h-5 text-primary" />
+            
             <CardTitle>Financeiro</CardTitle>
+            <CreditCard />
           </CardHeader>
           <CardContent>
             <div className="text-sm text-gray-500">
@@ -92,10 +94,9 @@ export default function AdminDashboard({ data }) {
           className="cursor-pointer hover:shadow-md transition"
           onClick={goToUsers}
         >
-          <CardHeader className="flex items-center">
-            <Users className="w-5 h-5 text-primary" />
+          <CardHeader className="flex items-center">           
             <CardTitle>Usuários</CardTitle>
-            
+            <Users />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{usersCount}</div>
