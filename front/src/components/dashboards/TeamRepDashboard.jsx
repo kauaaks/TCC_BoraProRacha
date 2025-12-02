@@ -18,6 +18,10 @@ export default function TeamRepDashboard({ data, teamId }) {
   const { user, apiCall } = useAuth()
   const navigate = useNavigate();
 
+  const goToAgendar = () =>{
+    navigate("/agendar")
+  }
+
   const goToStats = () => {
     navigate("/Stats"); // Ou a rota que você definiu para as estatísticas
   };
@@ -258,10 +262,15 @@ export default function TeamRepDashboard({ data, teamId }) {
               </DialogContent>
             </Dialog>
 
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Calendar className="w-6 h-6" />
-              <span className="text-sm">Agendar Jogo</span>
-            </Button>
+            <Button
+              variant="outline"
+                className="h-20 flex-col space-y-2"
+                onClick={() => navigate("/schedule-game")} // coloque aqui a rota correta
+              >
+                <Calendar className="w-6 h-6" />
+                <span className="text-sm">Agendar Jogo</span>
+              </Button>
+
 
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>

@@ -96,6 +96,9 @@ export function AuthProvider({ children }) {
       const merged = mergeUser(firebaseUser, mongoUser);
       setUser(merged);
 
+      // 🔹 Força atualização do usuário para refletir dados completos
+      await refreshUser();
+
       return { success: true, user: merged };
     } catch (error) {
       console.error("Erro no login:", error);
@@ -138,6 +141,9 @@ export function AuthProvider({ children }) {
       setUser(merged);
       setToken(idToken);
       localStorage.setItem("token", idToken);
+
+      // 🔹 Força atualização do usuário para refletir dados completos
+      await refreshUser();
 
       return { success: true, user: merged };
     } catch (error) {
@@ -195,11 +201,9 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-
   const updateUser = (partial) => {
     setUser((prev) => (prev ? { ...prev, ...partial } : partial));
   };
-
 
   const syncMongoUser = async () => {
     const current = auth.currentUser;
@@ -213,7 +217,6 @@ export function AuthProvider({ children }) {
     setUser(merged);
     return merged;
   };
-
 
   const refreshUser = async () => {
     const current = auth.currentUser;
