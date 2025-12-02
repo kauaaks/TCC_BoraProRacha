@@ -70,7 +70,7 @@ export default function PrivacyPolicy() {
             onClick={() => navigate(-1)}
             className="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
           >
-            ← Voltar
+            Fechar
           </button>
         </div>
 

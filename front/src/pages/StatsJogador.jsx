@@ -46,6 +46,20 @@ export default function EstatisticasJogador() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  const [avatarUrl, setAvatarUrl] = useState(
+    user?.avatar ? `${API_BASE_URL}${user?.avatar}` : null
+  );
+
+  useEffect(() => {
+    if (user?.avatar) {
+      setAvatarUrl(`${API_BASE_URL}${user?.avatar}`);
+    } else {
+      setAvatarUrl(null);
+    }
+  }, [user?.avatar]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -119,10 +133,10 @@ export default function EstatisticasJogador() {
 
       {/* Perfil */}
       <div className="flex items-center gap-6 mb-10 ">
-        <div className="w-24 h-24 rounded-full bg-green-200 flex items-center justify-center text-green-900 text-4xl font-bold">
-          {profile.avatar ? (
+        <div className="w-24 h-24 rounded-full bg-green-200 flex items-center justify-center text-green-900 text-4xl font-bold overflow-hidden">
+          {avatarUrl ? (
             <img
-              src={profile.avatar}
+              src={avatarUrl}
               alt="Avatar"
               className="w-24 h-24 rounded-full object-cover"
             />
@@ -139,7 +153,7 @@ export default function EstatisticasJogador() {
         <div>
           <h1 className="text-2xl font-bold">{profile.name}</h1>
           <p className="text-gray-700">
-            {profile.position} • {profile.age} anos
+            {profile.position}
           </p>
           <p className="text-green-700 font-semibold">Status: {profile.status}</p>
         </div>
