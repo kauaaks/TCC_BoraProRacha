@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Upload, Eye, CheckCircle2, XCircle, Users, Bell, Trash } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
-const toAbsolute = (u) => (u?.startsWith?.('http') ? u : `${API_BASE_URL}${u || ''}`)
+const API_BASE_URL = import.meta.env.VITE_API_URL
+const toAbsolute = (u) => (u?.startsWith?.('http') ? u : `${API_BASE_URL}${u}`)
 
 const formatDatePTBR = (dateString) => {
   if (!dateString) return '--'

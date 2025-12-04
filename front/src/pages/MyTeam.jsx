@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import GameStatsForm from '../components/forms/GameStatsForm'
 import QRCode from 'qrcode' // gerar QR local
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const POSITION_OPTIONS = [
   { value: 'goleiro', label: 'Goleiro' },
