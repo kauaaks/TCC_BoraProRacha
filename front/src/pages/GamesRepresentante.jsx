@@ -18,13 +18,8 @@ import {
   Edit,
 } from "lucide-react";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5000";
-
-  const toAbsolute = (u) =>
-  u?.startsWith?.("http") ? u : `${API_BASE_URL}${u || ""}`;
+const API_BASE_URL = import.meta.env.VITE_API_URL ;
+const toAbsolute = (u) => u?.startsWith?.("http") ? u : `${API_BASE_URL}${u}`;
 
 const teamColors = [
   { name: "Verde", class: "bg-green-600", badge: "bg-green-100 text-green-800" },

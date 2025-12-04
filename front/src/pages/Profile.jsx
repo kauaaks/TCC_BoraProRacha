@@ -10,7 +10,7 @@ import {
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export default function Profile() {
   const { user, apiCall, refreshUser } = useAuth();

@@ -32,11 +32,11 @@ const MONTH_LABELS = [
   "Dec",
 ];
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5000";
-const toAbsolute = (u) => (u?.startsWith?.("http") ? u : `${API_BASE_URL}${u || ""}`);
+
+// base do backend para montar URL absoluta (avatar + escudo)
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+const toAbsolute = (u) => (u?.startsWith?.("http") ? u : `${API_BASE_URL}${u}`);
+
 
 export default function EstatisticasJogador() {
   const { user, apiCall } = useAuth();

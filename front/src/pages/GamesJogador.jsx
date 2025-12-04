@@ -5,13 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users, Shirt, Loader2, ArrowLeft, X, Trophy } from "lucide-react";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5000";
-
-const toAbsolute = (u) =>
-  u?.startsWith?.("http") ? u : `${API_BASE_URL}${u || ""}`;
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+const toAbsolute = (u) => u?.startsWith?.("http") ? u : `${API_BASE_URL}${u}`;
 
 function formatDateLabel(date, time) {
   try {
