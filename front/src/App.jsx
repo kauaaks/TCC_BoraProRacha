@@ -13,10 +13,10 @@ import Games from "./components/Games";
 import Payments from "./components/Payments";
 import Stats from "./components/Stats";
 import Profile from "./pages/Profile";
-import JoinTeam from "./pages/invitations/join";
+import JoinTeam from "./pages/invitations/Join";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
-import CriarUsuarioForm from "./components/forms/CriarUsuarioForm";
+import CriarUsuarioForm from "./components/forms/criarUsuarioForm";
 import CriarTimeForm from "./components/forms/criarTimeForm";
 
 import PrivateRoute from "./routes/PrivateRoute";
