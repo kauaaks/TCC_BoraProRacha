@@ -1,3 +1,6 @@
+backend/src/config/firebase-service-account.json
+backend/src/uploads/
+
 node_modules
 **/node_modules
 
